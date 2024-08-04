@@ -1,0 +1,1 @@
+A C++ implementation of [this.](https://github.com/Lucas1774/Controller-Adapter) You would be surprised about how much not much faster it is.
