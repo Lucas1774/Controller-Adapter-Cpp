@@ -1,0 +1,2 @@
+.\mapper.exe swarm
+PAUSE
