@@ -1,9 +1,8 @@
-#include "funcs.h"
-#include "windows.h"
 #include <functional>
 #include <thread>
 #include <chrono>
-#include <stdio.h>
+#include <windows.h>
+#include "funcs.h"
 
 void Functions::setMaps(std::unordered_map<std::string, std::function<void()>> input_to_logic_before,
                         std::unordered_map<std::string, std::function<void()>> input_to_logic_after)
@@ -12,19 +11,30 @@ void Functions::setMaps(std::unordered_map<std::string, std::function<void()>> i
     this->input_to_logic_after = input_to_logic_after;
 }
 
+void Functions::sendInput(int key, DWORD flags)
+{
+    INPUT ip = {0};
+    ip.type = INPUT_KEYBOARD;
+    ip.ki.wScan = MapVirtualKey(key, MAPVK_VK_TO_VSC);
+    ip.ki.dwFlags = flags;
+    SendInput(1, &ip, sizeof(INPUT));
+}
+
 void Functions::callbackBeforeAction(const std::string &input)
 {
-    if (input_to_logic_before.find(input) != input_to_logic_before.end())
+    auto inputToLogic = input_to_logic_before.find(input);
+    if (inputToLogic != input_to_logic_before.end())
     {
-        input_to_logic_before[input]();
+        inputToLogic->second();
     }
 }
 
 void Functions::callbackAfterAction(const std::string &input)
 {
-    if (input_to_logic_after.find(input) != input_to_logic_after.end())
+    auto inputToLogic = input_to_logic_after.find(input);
+    if (inputToLogic != input_to_logic_after.end())
     {
-        input_to_logic_after[input]();
+        inputToLogic->second();
     }
 }
 
@@ -43,15 +53,9 @@ void Functions::moveMouseRelative(int x, int y)
 void Functions::pressThenRelease(int key_to_tap, std::function<void()> callback)
 {
 
-    INPUT ip = {0};
-    WORD scancode = MapVirtualKey(key_to_tap, MAPVK_VK_TO_VSC);
-    ip.type = INPUT_KEYBOARD;
-    ip.ki.wScan = scancode;
-    ip.ki.dwFlags = KEYEVENTF_SCANCODE;
-    SendInput(1, &ip, sizeof(INPUT));
+    this->sendInput(key_to_tap, KEYEVENTF_SCANCODE);
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    ip.ki.dwFlags = KEYEVENTF_KEYUP;
-    SendInput(1, &ip, sizeof(INPUT));
+    this->sendInput(key_to_tap, KEYEVENTF_KEYUP);
     if (callback)
     {
         callback();
@@ -89,22 +93,13 @@ void Functions::handleToKeyHoldInput(const std::string &input_state, const std::
     if (input_state == "JUST_PRESSED")
     {
         callbackBeforeAction(input);
-        INPUT ip = {0};
-        WORD scancode = MapVirtualKey(key_to_press, MAPVK_VK_TO_VSC);
-        ip.type = INPUT_KEYBOARD;
-        ip.ki.wScan = scancode;
-        ip.ki.dwFlags = KEYEVENTF_SCANCODE;
-        SendInput(1, &ip, sizeof(INPUT));
+        this->sendInput(key_to_press, KEYEVENTF_SCANCODE);
         callbackAfterAction(input);
     }
     else if (input_state == "JUST_RELEASED")
     {
-        INPUT ip = {0};
-        WORD scancode = MapVirtualKey(key_to_press, MAPVK_VK_TO_VSC);
-        ip.type = INPUT_KEYBOARD;
-        ip.ki.wScan = scancode;
-        ip.ki.dwFlags = KEYEVENTF_KEYUP;
-        SendInput(1, &ip, sizeof(INPUT));
+        callbackBeforeAction(input);
+        this->sendInput(key_to_press, KEYEVENTF_KEYUP);
         callbackAfterAction(input);
     }
 }
@@ -123,8 +118,7 @@ void Functions::handleToClickInput(const std::string &input_state, const std::st
 {
     if (input_state == "JUST_PRESSED")
     {
-        callbackAfterAction(input);
-
+        callbackBeforeAction(input);
         std::thread([=]
                     { clickThenRelease(button_to_click, [=]
                                        { callbackAfterAction(input); }); })
@@ -132,6 +126,7 @@ void Functions::handleToClickInput(const std::string &input_state, const std::st
     }
 }
 
+// Function to handle key tap release input
 void Functions::handleToKeyTapRelease(const std::string &input_state, const std::string &input, int key_to_tap)
 {
     if (input_state == "JUST_RELEASED")

@@ -1,17 +1,17 @@
-#include "swarm.h"
-#include "funcs.h"
 #include <fstream>
 #include <iostream>
-#include <math.h>
-#include <windows.h>
+#include <cmath>
 #include <string>
 #include <unordered_map>
 #include <vector>
 #include <chrono>
+#include <thread>
+#include <windows.h>
+#include "swarm.h"
+#include "funcs.h"
 
 namespace swarm
 {
-
     void run(
         std::unordered_map<std::string, std::string> &buttonState,
         bool hasTriggers,
@@ -86,13 +86,9 @@ namespace swarm
 
         auto INPUT_TO_LOGIC_BEFORE = std::unordered_map<std::string, std::function<void()>>{
             {"R2", [&]()
-             {
-                 functions.moveMouse(center_x, center_y);
-             }},
+             { functions.moveMouse(center_x, center_y); }},
             {"R3", [&]()
-             {
-                 highPrecisionAlwaysOn = !highPrecisionAlwaysOn;
-             }}};
+             { highPrecisionAlwaysOn = !highPrecisionAlwaysOn; }}};
 
         auto INPUT_TO_LOGIC_AFTER = std::unordered_map<std::string, std::function<void()>>{
             {"R1", [&]()
@@ -104,22 +100,14 @@ namespace swarm
 
         try
         {
-            float leftX;
-            float leftY;
-            bool isLeftXActive;
-            bool isLeftYActive;
-            float rightX;
-            float rightY;
-            bool isRightXActive;
-            bool isRightYActive;
-            bool isLeftTriggerAxisActive = false;
-            bool isRightTriggerAxisActive = false;
+            float leftX, leftY, rightX, rightY;
+            bool isLeftXActive, isLeftYActive, isRightXActive, isRightYActive, isLeftTriggerAxisActive, isRightTriggerAxisActive;
 
-            std::chrono::time_point lastUpdateTime = std::chrono::steady_clock::now();
+            auto lastUpdateTime = std::chrono::steady_clock::now();
 
             while (true)
             {
-                std::chrono::time_point loopStartTime = std::chrono::steady_clock::now();
+                auto loopStartTime = std::chrono::steady_clock::now();
                 std::vector<SDL_Event> events;
                 SDL_Event event;
                 while (SDL_PollEvent(&event))
@@ -157,18 +145,21 @@ namespace swarm
                         }
                     }
 
-                    float leftX = SDL_JoystickGetAxis(joystick, LEFT_JS_X_ID) / 32768.0f;
-                    float leftY = SDL_JoystickGetAxis(joystick, LEFT_JS_Y_ID) / 32768.0f;
-                    bool isLeftXActive = abs(leftX) > LEFT_JS_DEAD_ZONE;
-                    bool isLeftYActive = abs(leftY) > LEFT_JS_DEAD_ZONE;
+                    leftX = SDL_JoystickGetAxis(joystick, LEFT_JS_X_ID) / 32768.0f;
+                    leftY = SDL_JoystickGetAxis(joystick, LEFT_JS_Y_ID) / 32768.0f;
+                    isLeftXActive = std::abs(leftX) > LEFT_JS_DEAD_ZONE;
+                    isLeftYActive = std::abs(leftY) > LEFT_JS_DEAD_ZONE;
+
                     functions.handleState(&buttonState["LEFT_JS_LEFT"], isLeftXActive && leftX < 0);
                     functions.handleState(&buttonState["LEFT_JS_RIGHT"], isLeftXActive && leftX > 0);
                     functions.handleState(&buttonState["LEFT_JS_UP"], isLeftYActive && leftY < 0);
                     functions.handleState(&buttonState["LEFT_JS_DOWN"], isLeftYActive && leftY > 0);
-                    float rightX = SDL_JoystickGetAxis(joystick, RIGHT_JS_X_ID) / 32768.0f;
-                    float rightY = SDL_JoystickGetAxis(joystick, RIGHT_JS_Y_ID) / 32768.0f;
-                    bool isRightXActive = abs(rightX) > RIGHT_JS_DEAD_ZONE;
-                    bool isRightYActive = abs(rightY) > RIGHT_JS_DEAD_ZONE;
+
+                    rightX = SDL_JoystickGetAxis(joystick, RIGHT_JS_X_ID) / 32768.0f;
+                    rightY = SDL_JoystickGetAxis(joystick, RIGHT_JS_Y_ID) / 32768.0f;
+                    isRightXActive = std::abs(rightX) > RIGHT_JS_DEAD_ZONE;
+                    isRightYActive = std::abs(rightY) > RIGHT_JS_DEAD_ZONE;
+
                     if (hasTriggers)
                     {
                         isLeftTriggerAxisActive = (SDL_JoystickGetAxis(joystick, LEFT_TRIGGER_ID) + 32768) / 65536.0f > LEFT_TRIGGER_DEAD_ZONE;
@@ -220,7 +211,7 @@ namespace swarm
                         buttonState["L1"] = "NOT_PRESSED";
                     }
 
-                    // Action
+                    // action
                     for (const auto &[input, keyToTap] : INPUT_TO_KEY_TAP)
                     {
                         functions.handleToKeyTapInput(buttonState[input], input, keyToTap);
@@ -260,12 +251,7 @@ namespace swarm
                     }
                 }
 
-                int microseconds = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - loopStartTime).count();
-                if (microseconds > 1000)
-                {
-                    std::cout << "Loop took " << microseconds << " microseconds." << std::endl;
-                }
-                std::this_thread::sleep_for(std::chrono::microseconds(std::max(10000 - microseconds, 0)));
+                std::this_thread::sleep_for(std::chrono::microseconds(std::max(10000 - std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - loopStartTime).count(), 0LL)));
             }
         }
         catch (const std::exception &e)
