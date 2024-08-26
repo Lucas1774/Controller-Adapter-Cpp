@@ -7,6 +7,7 @@
 #include <SDL2/SDL_main.h>
 #include <windows.h>
 #include "swarm.h"
+#include "tft.h"
 
 using namespace swarm;
 
@@ -68,6 +69,10 @@ int main(int argc, char *argv[])
     if (game == "swarm")
     {
         swarm::run(buttonState, hasTriggers, config, screenWidth, screenHeight, joystick);
+    }
+    else if (game == "tft")
+    {
+        tft::run(buttonState, hasTriggers, config, screenWidth, screenHeight, joystick);
     }
     else
     {

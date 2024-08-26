@@ -62,13 +62,37 @@ void Functions::pressThenRelease(int key_to_tap, std::function<void()> callback)
     }
 }
 
+void Functions::clickAndHoldButton(int button_to_click, std::function<void()> callback)
+{
+    INPUT ip = {0};
+    ip.type = INPUT_MOUSE;
+    ip.mi.dwFlags = mouse_down_mapping[button_to_click];
+    SendInput(1, &ip, sizeof(INPUT));
+    if (callback)
+    {
+        callback();
+    }
+}
+
+void Functions::releaseButton(int button_to_release, std::function<void()> callback)
+{
+    INPUT ip = {0};
+    ip.type = INPUT_MOUSE;
+    ip.mi.dwFlags = mouse_up_mapping[button_to_release];
+    SendInput(1, &ip, sizeof(INPUT));
+    if (callback)
+    {
+        callback();
+    }
+}
+
 void Functions::clickThenRelease(int button_to_click, std::function<void()> callback)
 {
     INPUT ip[2] = {0};
     ip[0].type = INPUT_MOUSE;
-    ip[0].mi.dwFlags = (button_to_click == 0) ? MOUSEEVENTF_LEFTDOWN : MOUSEEVENTF_RIGHTDOWN;
+    ip[0].mi.dwFlags = mouse_down_mapping[button_to_click];
     ip[1].type = INPUT_MOUSE;
-    ip[1].mi.dwFlags = (button_to_click == 0) ? MOUSEEVENTF_LEFTUP : MOUSEEVENTF_RIGHTUP;
+    ip[1].mi.dwFlags = mouse_up_mapping[button_to_click];
     SendInput(2, ip, sizeof(INPUT));
     if (callback)
     {
@@ -126,7 +150,30 @@ void Functions::handleToClickInput(const std::string &input_state, const std::st
     }
 }
 
-// Function to handle key tap release input
+void Functions::handleToClickAndHoldOrReleaseInput(const std::string &input_state, const std::string &input, int button_to_click_or_release)
+{
+    if (input_state == "JUST_PRESSED")
+    {
+        callbackBeforeAction(input);
+        if (!(GetAsyncKeyState(button_to_click_or_release) & 0x8000))
+        {
+            callbackAfterAction(input);
+            std::thread([=]
+                        { clickAndHoldButton(button_to_click_or_release, [=]
+                                      { callbackAfterAction(input); }); })
+                .detach();
+        }
+        else
+        {
+            callbackAfterAction(input);
+            std::thread([=]
+                        { releaseButton(button_to_click_or_release, [=]
+                                        { callbackAfterAction(input); }); })
+                .detach();
+        }
+    }
+}
+
 void Functions::handleToKeyTapRelease(const std::string &input_state, const std::string &input, int key_to_tap)
 {
     if (input_state == "JUST_RELEASED")

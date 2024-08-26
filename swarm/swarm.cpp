@@ -228,7 +228,7 @@ namespace swarm
                     {
                         functions.handleToKeyTapRelease(buttonState[input], input, keyToTap);
                     }
-                    functions.handleToClickInput(buttonState["A"], "A", 0);
+                    functions.handleToClickInput(buttonState["A"], "A", SDL_BUTTON_LEFT);
 
                     if (isRightXActive || isRightYActive)
                     {

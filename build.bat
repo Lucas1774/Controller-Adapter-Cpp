@@ -1,1 +1,1 @@
-g++.exe -fdiagnostics-color=always -g util\funcs.cpp swarm\swarm.cpp main.cpp -o mapper.exe -IC:util -IC:swarm -IC:jsoncpp-1.9.5\include -IC:SDL2-2.30.6\x86_64-w64-mingw32\include -LC:jsoncpp-1.9.5\lib -LC:SDL2-2.30.6\x86_64-w64-mingw32\lib -ljsoncpp -lSDL2main -lSDL2 
+g++.exe -fdiagnostics-color=always -g util\funcs.cpp swarm\swarm.cpp tft\tft.cpp main.cpp -o mapper.exe -IC:util -IC:swarm -IC:tft -IC:jsoncpp-1.9.5\include -IC:SDL2-2.30.6\x86_64-w64-mingw32\include -LC:jsoncpp-1.9.5\lib -LC:SDL2-2.30.6\x86_64-w64-mingw32\lib -ljsoncpp -lSDL2main -lSDL2 

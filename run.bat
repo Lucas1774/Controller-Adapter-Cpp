@@ -1,2 +1,2 @@
-.\mapper.exe swarm
+.\mapper.exe tft
 PAUSE
