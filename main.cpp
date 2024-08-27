@@ -1,20 +1,18 @@
 #define SDL_MAIN_HANDLED
 
+#include "swarm.h"
+#include "tft.h"
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_main.h>
 #include <fstream>
 #include <iostream>
 #include <unordered_map>
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_main.h>
 #include <windows.h>
-#include "swarm.h"
-#include "tft.h"
 
 using namespace swarm;
 
-int main(int argc, char *argv[])
-{
-    if (argc < 2)
-    {
+int main(int argc, char *argv[]) {
+    if (argc < 2) {
         std::cerr << "No game was specified" << std::endl;
         return 1;
     }
@@ -22,25 +20,20 @@ int main(int argc, char *argv[])
 
     Json::Value config;
     std::ifstream configFile("config.json", std::ifstream::binary);
-    if (configFile.is_open())
-    {
+    if (configFile.is_open()) {
         configFile >> config;
         configFile.close();
-    }
-    else
-    {
+    } else {
         std::cerr << "Error opening config file." << std::endl;
         return 1;
     }
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK) < 0)
-    {
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK) < 0) {
         std::cerr << "SDL initialization error: " << SDL_GetError() << std::endl;
         return 1;
     }
 
     SDL_DisplayMode dm;
-    if (SDL_GetCurrentDisplayMode(0, &dm) != 0)
-    {
+    if (SDL_GetCurrentDisplayMode(0, &dm) != 0) {
         std::cerr << "SDL display mode error: " << SDL_GetError() << std::endl;
         SDL_Quit();
         return 1;
@@ -50,14 +43,11 @@ int main(int argc, char *argv[])
 
     SDL_Joystick *joystick = nullptr;
     bool hasTriggers = false;
-    if (SDL_NumJoysticks() > 0)
-    {
+    if (SDL_NumJoysticks() > 0) {
         joystick = SDL_JoystickOpen(0);
         SDL_PollEvent(nullptr);
         hasTriggers = SDL_JoystickGetAxis(joystick, config["left_trigger_id"].asInt()) != 0;
-    }
-    else
-    {
+    } else {
         std::cerr << "No controller found" << std::endl;
         SDL_Quit();
         return 1;
@@ -66,21 +56,15 @@ int main(int argc, char *argv[])
     std::unordered_map<std::string, std::string> buttonState = {
         {"A", "NOT_PRESSED"}, {"B", "NOT_PRESSED"}, {"X", "NOT_PRESSED"}, {"Y", "NOT_PRESSED"}, {"L1", "NOT_PRESSED"}, {"R1", "NOT_PRESSED"}, {"SELECT", "NOT_PRESSED"}, {"START", "NOT_PRESSED"}, {"L3", "NOT_PRESSED"}, {"R3", "NOT_PRESSED"}, {"XBOX", "NOT_PRESSED"}, {"UP", "NOT_PRESSED"}, {"LEFT", "NOT_PRESSED"}, {"RIGHT", "NOT_PRESSED"}, {"DOWN", "NOT_PRESSED"}, {"L2", "NOT_PRESSED"}, {"R2", "NOT_PRESSED"}, {"ACTIVATE", "NOT_PRESSED"}, {"LEFT_JS_LEFT", "NOT_PRESSED"}, {"LEFT_JS_RIGHT", "NOT_PRESSED"}, {"LEFT_JS_UP", "NOT_PRESSED"}, {"LEFT_JS_DOWN", "NOT_PRESSED"}, {"RIGHT_JS_LEFT", "NOT_PRESSED"}, {"RIGHT_JS_RIGHT", "NOT_PRESSED"}, {"RIGHT_JS_UP", "NOT_PRESSED"}, {"RIGHT_JS_DOWN", "NOT_PRESSED"}};
 
-    if (game == "swarm")
-    {
+    if (game == "swarm") {
         swarm::run(buttonState, hasTriggers, config, screenWidth, screenHeight, joystick);
-    }
-    else if (game == "tft")
-    {
+    } else if (game == "tft") {
         tft::run(buttonState, hasTriggers, config, screenWidth, screenHeight, joystick);
-    }
-    else
-    {
+    } else {
         std::cerr << "Invalid game" << std::endl;
     }
 
-    if (joystick)
-    {
+    if (joystick) {
         SDL_JoystickClose(joystick);
     }
     SDL_Quit();
