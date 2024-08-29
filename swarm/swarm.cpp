@@ -90,11 +90,11 @@ void run(
         {"R2", [&]() { functions.moveMouse(center_x, center_y); }},
         {"R3", [&]() { highPrecisionAlwaysOn = !highPrecisionAlwaysOn; }}};
 
-    auto INPUT_TO_LOGIC_AFTER = std::unordered_map<std::string, std::function<void()>>{
+    auto RELEASE_TO_LOGIC_AFTER = std::unordered_map<std::string, std::function<void()>>{
         {"R1", [&]() { currentRadius = MAX_RADIUS_HIGH_PRECISION_OFF;; }},
         {"L1", [&]() { currentRadius = MAX_RADIUS_HIGH_PRECISION_OFF;; }}};
 
-    functions.setMaps(&buttonState, &INPUT_TO_KEY_TAP, &INPUT_TO_KEY_HOLD, &RELEASE_TO_KEY_TAP, &INPUT_TO_MOUSE_MOVE, &INPUT_TO_MOUSE_CLICK, nullptr, nullptr, &INPUT_TO_LOGIC_BEFORE, &INPUT_TO_LOGIC_AFTER);
+    functions.setMaps(&buttonState, &INPUT_TO_KEY_TAP, &INPUT_TO_KEY_HOLD, &RELEASE_TO_KEY_TAP, &INPUT_TO_MOUSE_MOVE, &INPUT_TO_MOUSE_CLICK, nullptr, nullptr, &INPUT_TO_LOGIC_BEFORE, nullptr, nullptr, &RELEASE_TO_LOGIC_AFTER);
 
     try {
         float leftX, leftY, rightX, rightY;

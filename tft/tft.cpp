@@ -70,7 +70,7 @@ void run(std::unordered_map<std::string, std::string> &buttonState, bool hasTrig
         {"UP", [&]() { updateAbstractState(mode, tft::PadDirections::UP, state); }},
         {"DOWN", [&]() { updateAbstractState(mode, tft::PadDirections::DOWN, state); }}};
 
-    functions.setMaps(&buttonState, &INPUT_TO_KEY_TAP, nullptr, nullptr, &INPUT_TO_MOUSE_MOVE, &INPUT_TO_MOUSE_CLICK, &INPUT_TO_MOUSE_BUTTON_HOLD_OR_RELEASE, &RELEASE_TO_MOUSE_MOVE, &INPUT_TO_LOGIC_BEFORE, nullptr);
+    functions.setMaps(&buttonState, &INPUT_TO_KEY_TAP, nullptr, nullptr, &INPUT_TO_MOUSE_MOVE, &INPUT_TO_MOUSE_CLICK, &INPUT_TO_MOUSE_BUTTON_HOLD_OR_RELEASE, &RELEASE_TO_MOUSE_MOVE, &INPUT_TO_LOGIC_BEFORE, nullptr, nullptr, nullptr);
 
     try {
         float leftX, leftY, rightX, rightY;
