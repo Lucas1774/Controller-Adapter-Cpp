@@ -42,6 +42,7 @@ This game has custom config. See inside its folder.
 TODOS:
 - implement little legend movement
 - implement free mouse movement
+- account for different resolutions
 - think about how to release something (maybe just drop champions in shop and items on top of nothing?)
 - implement turbo to navigate
 - think about portal selection (free clicking, maybe L3)
