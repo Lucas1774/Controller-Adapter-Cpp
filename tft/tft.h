@@ -2,14 +2,14 @@
 #define TFT_H
 #define NONE -1
 
+#include "constants.h"
 #include <SDL2/SDL.h>
 #include <json/json.h>
-#include <string>
 #include <unordered_map>
 
 namespace tft {
 void run(
-    std::unordered_map<std::string, std::string> &buttonState,
+    std::unordered_map<int, int> &buttonState,
     bool hasTriggers,
     Json::Value &config,
     int screenWidth,
@@ -20,12 +20,7 @@ enum MouseMovementWithPadMode {
     ITEMS,
     SHOP,
     CARDS,
-};
-enum Direction {
-    UP,
-    DOWN,
-    LEFT,
-    RIGHT,
+    FREE,
 };
 struct State {
     int boardRow;
@@ -37,8 +32,7 @@ struct State {
     MouseMovementWithPadMode mode;
     std::pair<int, int> mouse_target;
 };
-extern const std::vector<std::vector<std::pair<int, int>>> BOARD_COORDINATES;
-void updateAbstractState(MouseMovementWithPadMode mode, tft::Direction direction, State &state);
+void updateAbstractState(const Direction direction, State &state);
 } // namespace tft
 
 #endif // TFT_H

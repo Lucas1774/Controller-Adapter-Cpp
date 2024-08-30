@@ -25,7 +25,8 @@ This game has custom config. See inside its folder.
 ## Tft
 
     START -> click home button
-    A -> LEFT CLICK (behavior depends on mode)
+    SELECT -> RIGHT CLICK
+    A -> LEFT CLICK
     X -> F
     Y -> D
     B -> E
@@ -33,18 +34,13 @@ This game has custom config. See inside its folder.
     R1 (hold) -> shop mode
     L2 -> R
     R2 -> Q
-    L3 -> toggle card selection mode
-    R3 -> maybe W?
+    L3 -> W
+    R3 -> toggle card selection mode
     LEFT JOYSTICK (hold) -> move
     RIGHT JOYSTICK (hold) -> move mouse
-    UP, DOWN, LEFT, RIGHT -> move the mouse to pick a card or reroll
+    UP, DOWN, LEFT, RIGHT -> move the mouse to key spots depending on mode
 
 TODOS:
-- implement little legend movement
-- implement free mouse movement
 - account for different resolutions
-- think about how to release something (maybe just drop champions in shop and items on top of nothing?)
 - implement turbo to navigate
-- think about portal selection (free clicking, maybe L3)
-- think whether to get rid of press to hold click all together?
 - check performance

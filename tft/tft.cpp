@@ -1,10 +1,10 @@
 #include "tft.h"
+#include "constants.h"
 #include "funcs.h"
 #include <chrono>
 #include <cmath>
 #include <fstream>
 #include <iostream>
-#include <string>
 #include <thread>
 #include <unordered_map>
 #include <vector>
@@ -28,6 +28,9 @@ const std::vector<std::vector<std::pair<int, int>>> CARD_COORDINATES = {
     {{553, 580}, {963, 580}, {1380, 583}},
     {{552, 865}, {959, 866}, {1365, 865}}};
 
+const float MAX_RADIUS = 0.45;
+float HORIZONTAL_RADIUS_OFFSET = 0.9; // the board is not proportional to the screen it sits on, this will help adapt to that
+
 const int BOARD_ADJACENCY_MATRIX[10][10] = {
     {NONE, UP, NONE, NONE, NONE, NONE, NONE, NONE, DOWN, NONE},  // 0
     {DOWN, NONE, UP, NONE, NONE, NONE, NONE, NONE, NONE, NONE},  // 1
@@ -40,7 +43,7 @@ const int BOARD_ADJACENCY_MATRIX[10][10] = {
     {UP, NONE, NONE, NONE, NONE, DOWN, NONE, NONE, NONE, RIGHT}, // 8
     {UP, NONE, NONE, NONE, NONE, NONE, DOWN, NONE, LEFT, NONE}}; // 9
 
-void run(std::unordered_map<std::string, std::string> &buttonState, bool hasTriggers, Json::Value &config,
+void run(std::unordered_map<int, int> &buttonState, bool hasTriggers, Json::Value &config,
          int screenWidth, int screenHeight, SDL_Joystick *joystick) {
     int LEFT_JS_X_ID = config["left_joystick_x_id"].asInt();
     int LEFT_JS_Y_ID = config["left_joystick_y_id"].asInt();
@@ -53,10 +56,10 @@ void run(std::unordered_map<std::string, std::string> &buttonState, bool hasTrig
     float RIGHT_TRIGGER_DEAD_ZONE = config["right_trigger_dead_zone"].asFloat();
     float LEFT_TRIGGER_DEAD_ZONE = config["left_trigger_dead_zone"].asFloat();
     float RIGHT_JS_SENSITIVITY = config["right_joystick_sensitivity"].asFloat();
-    std::unordered_map<int, std::string> buttonMapping;
-    for (const auto &configKey : config["button_mapping"].getMemberNames()) {
+    std::unordered_map<int, int> buttonMapping;
+    for (std::string &configKey : config["button_mapping"].getMemberNames()) {
         int key = config["button_mapping"][configKey].asInt() - 1;
-        buttonMapping[key] = configKey;
+        buttonMapping[key] = BUTTON_NAME_TO_BUTTON_ID.at(configKey);
     }
     bool running = config["run_automatically"].asBool();
 
@@ -64,35 +67,36 @@ void run(std::unordered_map<std::string, std::string> &buttonState, bool hasTrig
 
     int center_x = screenWidth / 2;
     int center_y = screenHeight / 2;
+    int vertical_adjustment = screenHeight / 10;
     State state = {2, 3, 0, 2, 0, 1, BOARD, {}};
 
-    auto INPUT_TO_KEY_TAP = std::unordered_map<std::string, WORD>{{"B", 'E'}, {"X", 'F'}, {"Y", 'D'}, {"L3", 'W'}, {"R2", 'R'}, {"L2", 'Q'}};
+    auto INPUT_TO_KEY_TAP = std::unordered_map<int, WORD>{{B, 'E'}, {X, 'F'}, {Y, 'D'}, {L3, 'W'}, {R2, 'R'}, {L2, 'Q'}};
 
-    auto INPUT_TO_MOUSE_CLICK = std::unordered_map<std::string, int>{{"START", SDL_BUTTON_LEFT}};
+    auto INPUT_TO_MOUSE_CLICK = std::unordered_map<int, int>{{START, SDL_BUTTON_LEFT}, {A, SDL_BUTTON_LEFT}, {SELECT, SDL_BUTTON_RIGHT}}; // A to left. if free to right would be an idea if it wasnt for portals :/
 
     // TODO: think if I want to keep passing a reference or save this for static targets and just call move mouse for dynamic ones
-    auto INPUT_TO_MOUSE_MOVE = std::unordered_map<std::string, std::pair<int, int> *>{
-        {"LEFT", &state.mouse_target},
-        {"RIGHT", &state.mouse_target},
-        {"UP", &state.mouse_target},
-        {"DOWN", &state.mouse_target},
-        {"R1", &state.mouse_target},
-        {"L1", &state.mouse_target},
-        {"R3", &state.mouse_target}};
+    auto INPUT_TO_MOUSE_MOVE = std::unordered_map<int, std::pair<int, int> *>{
+        {PAD_LEFT, &state.mouse_target},
+        {PAD_RIGHT, &state.mouse_target},
+        {PAD_UP, &state.mouse_target},
+        {PAD_DOWN, &state.mouse_target},
+        {R1, &state.mouse_target},
+        {L1, &state.mouse_target},
+        {R3, &state.mouse_target}};
 
-    auto RELEASE_TO_MOUSE_MOVE = std::unordered_map<std::string, std::pair<int, int> *>{
-        {"R1", &state.mouse_target},
-        {"L1", &state.mouse_target},
+    auto RELEASE_TO_MOUSE_MOVE = std::unordered_map<int, std::pair<int, int> *>{
+        {R1, &state.mouse_target},
+        {L1, &state.mouse_target},
     };
 
-    auto INPUT_TO_LOGIC_BEFORE = std::unordered_map<std::string, std::function<void()>>{
-        {"START", [&]() { functions.moveMouse(956, 993); }},
-        {"LEFT", [&]() { updateAbstractState(state.mode, Direction::LEFT, state); }},
-        {"RIGHT", [&]() { updateAbstractState(state.mode, Direction::RIGHT, state); }},
-        {"UP", [&]() { updateAbstractState(state.mode, Direction::UP, state); }},
-        {"DOWN", [&]() { updateAbstractState(state.mode, Direction::DOWN, state); }}};
+    auto INPUT_TO_LOGIC_BEFORE = std::unordered_map<int, std::function<void()>>{
+        {START, [&]() { functions.moveMouse(956, 993); }},
+        {PAD_LEFT, [&]() { updateAbstractState(LEFT, state); }},
+        {PAD_RIGHT, [&]() { updateAbstractState(RIGHT, state); }},
+        {PAD_UP, [&]() { updateAbstractState(UP, state); }},
+        {PAD_DOWN, [&]() { updateAbstractState(DOWN, state); }}};
 
-    functions.setMaps(&buttonState, &INPUT_TO_KEY_TAP, nullptr, nullptr, &INPUT_TO_MOUSE_MOVE, &INPUT_TO_MOUSE_CLICK, nullptr, &RELEASE_TO_MOUSE_MOVE, &INPUT_TO_LOGIC_BEFORE, nullptr, nullptr, nullptr);
+    functions.setMaps(&buttonState, &INPUT_TO_MOUSE_MOVE, &RELEASE_TO_MOUSE_MOVE, &INPUT_TO_MOUSE_CLICK, nullptr, nullptr, nullptr, &INPUT_TO_KEY_TAP, nullptr, nullptr, &INPUT_TO_LOGIC_BEFORE, nullptr, nullptr, nullptr);
 
     try {
         float leftX, leftY, rightX, rightY;
@@ -111,8 +115,8 @@ void run(std::unordered_map<std::string, std::string> &buttonState, bool hasTrig
             if (!running) {
                 for (const auto &event : events) {
                     if (event.type == SDL_JOYBUTTONDOWN) {
-                        std::string button = buttonMapping[event.jbutton.button];
-                        if (button == "ACTIVATE") {
+                        int button = buttonMapping[event.jbutton.button];
+                        if (button == ACTIVATE) {
                             running = true;
                             break;
                         }
@@ -121,11 +125,11 @@ void run(std::unordered_map<std::string, std::string> &buttonState, bool hasTrig
             } else {
                 // state
                 for (auto &pair : buttonState) {
-                    std::string &state = pair.second;
-                    if (state == "JUST_PRESSED") {
-                        state = "PRESSED";
-                    } else if (state == "JUST_RELEASED") {
-                        state = "NOT_PRESSED";
+                    int &state = pair.second;
+                    if (state == JUST_PRESSED) {
+                        state = PRESSED;
+                    } else if (state == JUST_RELEASED) {
+                        state = RELEASED;
                     }
                 }
 
@@ -140,48 +144,48 @@ void run(std::unordered_map<std::string, std::string> &buttonState, bool hasTrig
                 isRightYActive = std::abs(rightY) > RIGHT_JS_DEAD_ZONE;
 
                 if (hasTriggers) {
-                    functions.handleState(&buttonState["R2"],
+                    functions.handleState(&buttonState[R2],
                                           (SDL_JoystickGetAxis(joystick, RIGHT_TRIGGER_ID) + 32768) / 65536.0f >
                                               RIGHT_TRIGGER_DEAD_ZONE);
-                    functions.handleState(&buttonState["L2"],
+                    functions.handleState(&buttonState[L2],
                                           (SDL_JoystickGetAxis(joystick, LEFT_TRIGGER_ID) + 32768) / 65536.0f >
                                               LEFT_TRIGGER_DEAD_ZONE);
                 }
 
                 for (const auto &event : events) {
                     if (event.type == SDL_JOYBUTTONDOWN) {
-                        std::string button = buttonMapping[event.jbutton.button];
+                        int button = buttonMapping[event.jbutton.button];
                         functions.handleState(&buttonState[button], true);
                     } else if (event.type == SDL_JOYBUTTONUP) {
-                        std::string button = buttonMapping[event.jbutton.button];
+                        int button = buttonMapping[event.jbutton.button];
                         functions.handleState(&buttonState[button], false);
                     } else if (event.type == SDL_JOYHATMOTION) {
-                        functions.handleState(&buttonState["LEFT"], event.jhat.value == SDL_HAT_LEFT);
-                        functions.handleState(&buttonState["RIGHT"], event.jhat.value == SDL_HAT_RIGHT);
-                        functions.handleState(&buttonState["DOWN"], event.jhat.value == SDL_HAT_DOWN);
-                        functions.handleState(&buttonState["UP"], event.jhat.value == SDL_HAT_UP);
+                        functions.handleState(&buttonState[PAD_LEFT], event.jhat.value == SDL_HAT_LEFT);
+                        functions.handleState(&buttonState[PAD_RIGHT], event.jhat.value == SDL_HAT_RIGHT);
+                        functions.handleState(&buttonState[PAD_DOWN], event.jhat.value == SDL_HAT_DOWN);
+                        functions.handleState(&buttonState[PAD_UP], event.jhat.value == SDL_HAT_UP);
                     }
                 }
 
-                if (buttonState["ACTIVATE"] == "JUST_PRESSED") {
+                if (buttonState[ACTIVATE] == JUST_PRESSED) {
                     running = false;
                     continue;
                 }
-                if (buttonState["L1"] == "JUST_PRESSED") {
+                if (buttonState[L1] == JUST_PRESSED) {
                     state.mode = ITEMS;
                     state.mouse_target = ITEM_COORDINATES[state.itemIndex];
-                } else if (buttonState["L1"] == "JUST_RELEASED") {
+                } else if (buttonState[L1] == JUST_RELEASED) {
                     state.mode = BOARD;
                     state.mouse_target = BOARD_COORDINATES[state.boardRow][state.boardColumn];
                 }
-                if (buttonState["R1"] == "JUST_PRESSED") {
+                if (buttonState[R1] == JUST_PRESSED) {
                     state.mode = SHOP;
                     state.mouse_target = SHOP_COORDINATES[state.shopIndex];
-                } else if (buttonState["R1"] == "JUST_RELEASED") {
+                } else if (buttonState[R1] == JUST_RELEASED) {
                     state.mode = BOARD;
                     state.mouse_target = BOARD_COORDINATES[state.boardRow][state.boardColumn];
                 }
-                if (buttonState["R3"] == "JUST_PRESSED") {
+                if (buttonState[R3] == JUST_PRESSED) {
                     if (state.mode == CARDS) {
                         state.mode = BOARD;
                         state.mouse_target = BOARD_COORDINATES[state.boardRow][state.boardColumn];
@@ -195,28 +199,35 @@ void run(std::unordered_map<std::string, std::string> &buttonState, bool hasTrig
 
                 // action
                 for (const auto &[input, _] : INPUT_TO_KEY_TAP) {
-                    functions.handleToKeyTapInput(input);
+                    functions.handleToKeyTap(input, JUST_PRESSED);
                 }
                 for (const auto &[input, _] : INPUT_TO_MOUSE_MOVE) {
-                    functions.handleToMouseAbsoluteMoveInput(input);
+                    functions.handleToMouseAbsoluteMove(input, JUST_PRESSED);
                 }
                 for (const auto &[input, _] : RELEASE_TO_MOUSE_MOVE) {
-                    functions.handleToMouseMoveRelease(input);
+                    functions.handleToMouseAbsoluteMove(input, JUST_RELEASED);
                 }
                 for (const auto &[input, _] : INPUT_TO_MOUSE_CLICK) {
-                    functions.handleToClickInput(input);
-                }
-                if (state.mode == SHOP || state.mode == CARDS) {
-                    functions.handleToClickInput("A", SDL_BUTTON_LEFT);
-                } else {
-                    functions.handleToClickAndHoldOrReleaseInput("A", SDL_BUTTON_LEFT);
+                    functions.handleToClick(input, JUST_PRESSED);
                 }
 
                 if (isRightXActive || isRightYActive) {
-                    // ...
+                    if (std::chrono::steady_clock::now() - lastUpdateTime > std::chrono::milliseconds(100)) {
+                        state.mode = FREE;
+                        functions.moveMouseRelative(
+                            round(rightX * RIGHT_JS_SENSITIVITY * 500),
+                            round(rightY * RIGHT_JS_SENSITIVITY * 500));
+                        lastUpdateTime = std::chrono::steady_clock::now();
+                    }
                 }
                 if (isLeftXActive || isLeftYActive) {
-                    // ...
+                    functions.moveMouse(
+                        round(leftX * center_x * MAX_RADIUS * HORIZONTAL_RADIUS_OFFSET + center_x),
+                        round((leftY * center_y * MAX_RADIUS + center_y) - vertical_adjustment));
+                    if (std::chrono::steady_clock::now() - lastUpdateTime > std::chrono::milliseconds(100)) {
+                        functions.click(SDL_BUTTON_RIGHT);
+                        lastUpdateTime = std::chrono::steady_clock::now();
+                    }
                 }
             }
 
@@ -231,13 +242,16 @@ void run(std::unordered_map<std::string, std::string> &buttonState, bool hasTrig
     }
 }
 
-void updateAbstractState(MouseMovementWithPadMode mode, Direction direction, State &state) {
-    switch (mode) {
+void updateAbstractState(const Direction direction, State &state) {
+    if (state.mode == FREE) {
+        state.mode = BOARD;
+    }
+    switch (state.mode) {
     case BOARD:
         int row;
         int column;
         switch (direction) {
-        case Direction::UP:
+        case UP:
             row = (state.boardRow + 1) % 5;
             column;
             if (row != 0) {
@@ -246,7 +260,7 @@ void updateAbstractState(MouseMovementWithPadMode mode, Direction direction, Sta
                 column = state.boardColumn;
             }
             break;
-        case Direction::DOWN:
+        case DOWN:
             row = (state.boardRow + 4) % 5;
             column;
             if (row != 0) {
@@ -255,7 +269,7 @@ void updateAbstractState(MouseMovementWithPadMode mode, Direction direction, Sta
                 column = state.boardColumn;
             }
             break;
-        case Direction::LEFT:
+        case LEFT:
             row = state.boardRow;
             if (row != 0) {
                 column = (state.boardColumn + 6) % 7;
@@ -263,7 +277,7 @@ void updateAbstractState(MouseMovementWithPadMode mode, Direction direction, Sta
                 column = (state.boardColumn + 8) % 9;
             }
             break;
-        case Direction::RIGHT:
+        case RIGHT:
             row = state.boardRow;
             if (row != 0) {
                 column = (state.boardColumn + 1) % 7;
@@ -289,10 +303,10 @@ void updateAbstractState(MouseMovementWithPadMode mode, Direction direction, Sta
 
     case SHOP:
         switch (direction) {
-        case Direction::RIGHT:
+        case RIGHT:
             state.shopIndex = (state.shopIndex + 1) % 5;
             break;
-        case Direction::LEFT:
+        case LEFT:
             state.shopIndex = (state.shopIndex + 4) % 5;
             break;
         default:
@@ -303,14 +317,14 @@ void updateAbstractState(MouseMovementWithPadMode mode, Direction direction, Sta
 
     case CARDS:
         switch (direction) {
-        case Direction::UP:
-        case Direction::DOWN:
+        case UP:
+        case DOWN:
             state.cardRow = (state.cardRow + 1) % 2;
             break;
-        case Direction::RIGHT:
+        case RIGHT:
             state.cardColumn = (state.cardColumn + 1) % 3;
             break;
-        case Direction::LEFT:
+        case LEFT:
             state.cardColumn = (state.cardColumn + 2) % 3;
             break;
         }

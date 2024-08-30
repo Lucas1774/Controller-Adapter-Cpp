@@ -1,10 +1,10 @@
 #include "swarm.h"
+#include "constants.h"
 #include "funcs.h"
 #include <chrono>
 #include <cmath>
 #include <fstream>
 #include <iostream>
-#include <string>
 #include <thread>
 #include <unordered_map>
 #include <vector>
@@ -12,7 +12,7 @@
 
 namespace swarm {
 void run(
-    std::unordered_map<std::string, std::string> &buttonState,
+    std::unordered_map<int, int> &buttonState,
     bool hasTriggers,
     Json::Value &config,
     int screenWidth,
@@ -29,10 +29,10 @@ void run(
     float RIGHT_TRIGGER_DEAD_ZONE = config["right_trigger_dead_zone"].asFloat();
     float LEFT_TRIGGER_DEAD_ZONE = config["left_trigger_dead_zone"].asFloat();
     float RIGHT_JS_SENSITIVITY = config["right_joystick_sensitivity"].asFloat();
-    std::unordered_map<int, std::string> buttonMapping;
+    std::unordered_map<int, int> buttonMapping;
     for (const auto &configKey : config["button_mapping"].getMemberNames()) {
         int key = config["button_mapping"][configKey].asInt() - 1;
-        buttonMapping[key] = configKey;
+        buttonMapping[key] = BUTTON_NAME_TO_BUTTON_ID.at(configKey);
     }
     bool running = config["run_automatically"].asBool();
     bool highPrecision;
@@ -59,42 +59,42 @@ void run(
     auto center_pos = std::make_pair(center_x, center_y);
     auto reroll_pos = std::make_pair(center_x, 825);
 
-    auto INPUT_TO_KEY_TAP = std::unordered_map<std::string, WORD>{
-        {"START", VK_ESCAPE},
-        {"X", 'C'},
-        {"Y", 'O'}};
+    auto INPUT_TO_KEY_TAP = std::unordered_map<int, WORD>{
+        {START, VK_ESCAPE},
+        {X, 'C'},
+        {Y, 'O'}};
 
-    auto INPUT_TO_KEY_HOLD = std::unordered_map<std::string, WORD>{
-        {"LEFT_JS_LEFT", 'A'},
-        {"LEFT_JS_RIGHT", 'D'},
-        {"LEFT_JS_UP", 'W'},
-        {"LEFT_JS_DOWN", 'S'},
-        {"B", VK_TAB},
-        {"R2", 'T'}};
+    auto INPUT_TO_KEY_HOLD = std::unordered_map<int, WORD>{
+        {LEFT_JS_LEFT, 'A'},
+        {LEFT_JS_RIGHT, 'D'},
+        {LEFT_JS_UP, 'W'},
+        {LEFT_JS_DOWN, 'S'},
+        {B, VK_TAB},
+        {R2, 'T'}};
 
-    auto INPUT_TO_MOUSE_MOVE = std::unordered_map<std::string, std::pair<int, int> *>{
-        {"LEFT", &left_card_pos},
-        {"RIGHT", &right_card_pos},
-        {"UP", &center_pos},
-        {"DOWN", &reroll_pos},
-        {"R3", &center_pos}};
+    auto INPUT_TO_MOUSE_MOVE = std::unordered_map<int, std::pair<int, int> *>{
+        {PAD_LEFT, &left_card_pos},
+        {PAD_RIGHT, &right_card_pos},
+        {PAD_UP, &center_pos},
+        {PAD_DOWN, &reroll_pos},
+        {R3, &center_pos}};
 
-    auto INPUT_TO_MOUSE_CLICK = std::unordered_map<std::string, int>{
-        {"A", SDL_BUTTON_LEFT}};
+    auto INPUT_TO_MOUSE_CLICK = std::unordered_map<int, int>{
+        {A, SDL_BUTTON_LEFT}};
 
-    auto RELEASE_TO_KEY_TAP = std::unordered_map<std::string, WORD>{
-        {"R1", 'R'},
-        {"L1", 'E'}};
+    auto RELEASE_TO_KEY_TAP = std::unordered_map<int, WORD>{
+        {R1, 'R'},
+        {L1, 'E'}};
 
-    auto INPUT_TO_LOGIC_BEFORE = std::unordered_map<std::string, std::function<void()>>{
-        {"R2", [&]() { functions.moveMouse(center_x, center_y); }},
-        {"R3", [&]() { highPrecisionAlwaysOn = !highPrecisionAlwaysOn; }}};
+    auto INPUT_TO_LOGIC_BEFORE = std::unordered_map<int, std::function<void()>>{
+        {R2, [&]() { functions.moveMouse(center_x, center_y); }},
+        {R3, [&]() { highPrecisionAlwaysOn = !highPrecisionAlwaysOn; }}};
 
-    auto RELEASE_TO_LOGIC_AFTER = std::unordered_map<std::string, std::function<void()>>{
-        {"R1", [&]() { currentRadius = MAX_RADIUS_HIGH_PRECISION_OFF;; }},
-        {"L1", [&]() { currentRadius = MAX_RADIUS_HIGH_PRECISION_OFF;; }}};
+    auto RELEASE_TO_LOGIC_AFTER = std::unordered_map<int, std::function<void()>>{
+        {R1, [&]() { currentRadius = MAX_RADIUS_HIGH_PRECISION_OFF;; }},
+        {L1, [&]() { currentRadius = MAX_RADIUS_HIGH_PRECISION_OFF;; }}};
 
-    functions.setMaps(&buttonState, &INPUT_TO_KEY_TAP, &INPUT_TO_KEY_HOLD, &RELEASE_TO_KEY_TAP, &INPUT_TO_MOUSE_MOVE, &INPUT_TO_MOUSE_CLICK, nullptr, nullptr, &INPUT_TO_LOGIC_BEFORE, nullptr, nullptr, &RELEASE_TO_LOGIC_AFTER);
+    functions.setMaps(&buttonState, &INPUT_TO_MOUSE_MOVE, nullptr, &INPUT_TO_MOUSE_CLICK, nullptr, nullptr, nullptr, &INPUT_TO_KEY_TAP, &RELEASE_TO_KEY_TAP, &INPUT_TO_KEY_HOLD, &INPUT_TO_LOGIC_BEFORE, nullptr, nullptr, &RELEASE_TO_LOGIC_AFTER);
 
     try {
         float leftX, leftY, rightX, rightY;
@@ -112,8 +112,8 @@ void run(
             if (!running) {
                 for (const auto &event : events) {
                     if (event.type == SDL_JOYBUTTONDOWN) {
-                        std::string button = buttonMapping[event.jbutton.button];
-                        if (button == "ACTIVATE") {
+                        int button = buttonMapping[event.jbutton.button];
+                        if (button == ACTIVATE) {
                             running = true;
                             break;
                         }
@@ -122,11 +122,11 @@ void run(
             } else {
                 // state
                 for (auto &pair : buttonState) {
-                    std::string &state = pair.second;
-                    if (state == "JUST_PRESSED") {
-                        state = "PRESSED";
-                    } else if (state == "JUST_RELEASED") {
-                        state = "NOT_PRESSED";
+                    int &state = pair.second;
+                    if (state == JUST_PRESSED) {
+                        state = PRESSED;
+                    } else if (state == JUST_RELEASED) {
+                        state = RELEASED;
                     }
                 }
 
@@ -135,10 +135,10 @@ void run(
                 isLeftXActive = std::abs(leftX) > LEFT_JS_DEAD_ZONE;
                 isLeftYActive = std::abs(leftY) > LEFT_JS_DEAD_ZONE;
 
-                functions.handleState(&buttonState["LEFT_JS_LEFT"], isLeftXActive && leftX < 0);
-                functions.handleState(&buttonState["LEFT_JS_RIGHT"], isLeftXActive && leftX > 0);
-                functions.handleState(&buttonState["LEFT_JS_UP"], isLeftYActive && leftY < 0);
-                functions.handleState(&buttonState["LEFT_JS_DOWN"], isLeftYActive && leftY > 0);
+                functions.handleState(&buttonState[LEFT_JS_LEFT], isLeftXActive && leftX < 0);
+                functions.handleState(&buttonState[LEFT_JS_RIGHT], isLeftXActive && leftX > 0);
+                functions.handleState(&buttonState[LEFT_JS_UP], isLeftYActive && leftY < 0);
+                functions.handleState(&buttonState[LEFT_JS_DOWN], isLeftYActive && leftY > 0);
 
                 rightX = SDL_JoystickGetAxis(joystick, RIGHT_JS_X_ID) / 32768.0f;
                 rightY = SDL_JoystickGetAxis(joystick, RIGHT_JS_Y_ID) / 32768.0f;
@@ -152,52 +152,52 @@ void run(
 
                 for (const auto &event : events) {
                     if (event.type == SDL_JOYBUTTONDOWN) {
-                        std::string button = buttonMapping[event.jbutton.button];
+                        int button = buttonMapping[event.jbutton.button];
                         functions.handleState(&buttonState[button], true);
                     } else if (event.type == SDL_JOYBUTTONUP) {
-                        std::string button = buttonMapping[event.jbutton.button];
+                        int button = buttonMapping[event.jbutton.button];
                         functions.handleState(&buttonState[button], false);
                     } else if (event.type == SDL_JOYHATMOTION) {
-                        functions.handleState(&buttonState["LEFT"], event.jhat.value == SDL_HAT_LEFT);
-                        functions.handleState(&buttonState["RIGHT"], event.jhat.value == SDL_HAT_RIGHT);
-                        functions.handleState(&buttonState["DOWN"], event.jhat.value == SDL_HAT_DOWN);
-                        functions.handleState(&buttonState["UP"], event.jhat.value == SDL_HAT_UP);
+                        functions.handleState(&buttonState[PAD_LEFT], event.jhat.value == SDL_HAT_LEFT);
+                        functions.handleState(&buttonState[PAD_RIGHT], event.jhat.value == SDL_HAT_RIGHT);
+                        functions.handleState(&buttonState[PAD_DOWN], event.jhat.value == SDL_HAT_DOWN);
+                        functions.handleState(&buttonState[PAD_UP], event.jhat.value == SDL_HAT_UP);
                     }
                 }
 
-                if (buttonState["ACTIVATE"] == "JUST_PRESSED") {
+                if (buttonState[ACTIVATE] == JUST_PRESSED) {
                     running = false;
                     continue;
                 }
                 if (hasTriggers) {
                     highPrecision = isLeftTriggerAxisActive;
-                    functions.handleState(&buttonState["R2"], isRightTriggerAxisActive);
+                    functions.handleState(&buttonState[R2], isRightTriggerAxisActive);
                 } else {
-                    highPrecision = buttonState["L2"] == "PRESSED" || buttonState["L2"] == "JUST_PRESSED";
+                    highPrecision = buttonState[L2] == PRESSED || buttonState[L2] == JUST_PRESSED;
                 }
-                if (buttonState["R1"] == "PRESSED" || buttonState["L1"] == "PRESSED") {
+                if (buttonState[R1] == PRESSED || buttonState[L1] == PRESSED) {
                     currentRadius += RIGHT_JS_SENSITIVITY * 0.05f;
                 }
-                if (buttonState["L3"] == "JUST_PRESSED") {
-                    buttonState["R1"] = "NOT_PRESSED";
-                    buttonState["L1"] = "NOT_PRESSED";
+                if (buttonState[L3] == JUST_PRESSED) {
+                    buttonState[R1] = RELEASED;
+                    buttonState[L1] = RELEASED;
                 }
 
                 // action
                 for (const auto &[input, _] : INPUT_TO_KEY_TAP) {
-                    functions.handleToKeyTapInput(input);
+                    functions.handleToKeyTap(input, JUST_PRESSED);
                 }
                 for (const auto &[input, _] : INPUT_TO_KEY_HOLD) {
-                    functions.handleToKeyHoldInput(input);
+                    functions.handleToKeyHold(input);
                 }
                 for (const auto &[input, _] : INPUT_TO_MOUSE_MOVE) {
-                    functions.handleToMouseAbsoluteMoveInput(input);
+                    functions.handleToMouseAbsoluteMove(input, JUST_PRESSED);
                 }
                 for (const auto &[input, _] : RELEASE_TO_KEY_TAP) {
-                    functions.handleToKeyTapRelease(input);
+                    functions.handleToKeyTap(input, JUST_RELEASED);
                 }
                 for (const auto &[input, _] : INPUT_TO_MOUSE_CLICK) {
-                    functions.handleToClickInput(input);
+                    functions.handleToClick(input, JUST_PRESSED);
                 }
 
                 if (isRightXActive || isRightYActive) {

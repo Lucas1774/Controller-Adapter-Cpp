@@ -1,5 +1,6 @@
 #define SDL_MAIN_HANDLED
 
+#include "constants.h"
 #include "swarm.h"
 #include "tft.h"
 #include <SDL2/SDL.h>
@@ -53,8 +54,8 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    std::unordered_map<std::string, std::string> buttonState = {
-        {"A", "NOT_PRESSED"}, {"B", "NOT_PRESSED"}, {"X", "NOT_PRESSED"}, {"Y", "NOT_PRESSED"}, {"L1", "NOT_PRESSED"}, {"R1", "NOT_PRESSED"}, {"SELECT", "NOT_PRESSED"}, {"START", "NOT_PRESSED"}, {"L3", "NOT_PRESSED"}, {"R3", "NOT_PRESSED"}, {"XBOX", "NOT_PRESSED"}, {"UP", "NOT_PRESSED"}, {"LEFT", "NOT_PRESSED"}, {"RIGHT", "NOT_PRESSED"}, {"DOWN", "NOT_PRESSED"}, {"L2", "NOT_PRESSED"}, {"R2", "NOT_PRESSED"}, {"ACTIVATE", "NOT_PRESSED"}, {"LEFT_JS_LEFT", "NOT_PRESSED"}, {"LEFT_JS_RIGHT", "NOT_PRESSED"}, {"LEFT_JS_UP", "NOT_PRESSED"}, {"LEFT_JS_DOWN", "NOT_PRESSED"}, {"RIGHT_JS_LEFT", "NOT_PRESSED"}, {"RIGHT_JS_RIGHT", "NOT_PRESSED"}, {"RIGHT_JS_UP", "NOT_PRESSED"}, {"RIGHT_JS_DOWN", "NOT_PRESSED"}};
+    std::unordered_map<int, int> buttonState = {
+        {A, RELEASED}, {B, RELEASED}, {X, RELEASED}, {Y, RELEASED}, {L1, RELEASED}, {R1, RELEASED}, {SELECT, RELEASED}, {START, RELEASED}, {L3, RELEASED}, {R3, RELEASED}, {XBOX, RELEASED}, {PAD_UP, RELEASED}, {PAD_LEFT, RELEASED}, {PAD_RIGHT, RELEASED}, {PAD_DOWN, RELEASED}, {L2, RELEASED}, {R2, RELEASED}, {ACTIVATE, RELEASED}, {LEFT_JS_LEFT, RELEASED}, {LEFT_JS_RIGHT, RELEASED}, {LEFT_JS_UP, RELEASED}, {LEFT_JS_DOWN, RELEASED}, {RIGHT_JS_LEFT, RELEASED}, {RIGHT_JS_RIGHT, RELEASED}, {RIGHT_JS_UP, RELEASED}, {RIGHT_JS_DOWN, RELEASED}};
 
     if (game == "swarm") {
         swarm::run(buttonState, hasTriggers, config, screenWidth, screenHeight, joystick);

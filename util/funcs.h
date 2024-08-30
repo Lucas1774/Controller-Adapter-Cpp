@@ -1,71 +1,74 @@
 #ifndef FUNCTIONS_H
 #define FUNCTIONS_H
 
+#include "constants.h"
 #include <SDL2/SDL.h>
 #include <functional>
-#include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <windows.h>
 
 class Functions {
   public:
-    void setMaps(std::unordered_map<std::string, std::string> *buttonState,
-                 std::unordered_map<std::string, WORD> *input_to_key_tap,
-                 std::unordered_map<std::string, WORD> *input_to_key_hold,
-                 std::unordered_map<std::string, WORD> *release_to_key_tap,
-                 std::unordered_map<std::string, std::pair<int, int> *> *input_to_mouse_move,
-                 std::unordered_map<std::string, int> *input_to_mouse_click,
-                 std::unordered_map<std::string, int> *input_to_mouse_button_hold_or_release,
-                 std::unordered_map<std::string, std::pair<int, int> *> *release_to_mouse_move,
-                 std::unordered_map<std::string, std::function<void()>> *input_to_logic_before,
-                 std::unordered_map<std::string, std::function<void()>> *input_to_logic_after,
-                 std::unordered_map<std::string, std::function<void()>> *release_to_logic_before,
-                 std::unordered_map<std::string, std::function<void()>> *release_to_logic_after);
-    void moveMouse(int x, int y);
-    void moveMouseRelative(int x, int y);
-    void handleToKeyTapInput(const std::string &input);
-    void handleToKeyHoldInput(const std::string &input);
-    void handleToMouseAbsoluteMoveInput(const std::string &input);
-    void handleToClickInput(const std::string &input);
-    void handleToClickInput(const std::string &input, int button);
-    void handleToClickAndHoldOrReleaseInput(const std::string &input);
-    void handleToClickAndHoldOrReleaseInput(const std::string &input, int button);
-    void handleToMouseMoveRelease(const std::string &input);
-    void handleToKeyTapRelease(const std::string &input);
-    void handleState(std::string *const state, bool is_pressed);
+    void setMaps(std::unordered_map<int, int> *buttonState,
+                 std::unordered_map<int, std::pair<int, int> *> *input_to_mouse_move,
+                 std::unordered_map<int, std::pair<int, int> *> *release_to_mouse_move,
+                 std::unordered_map<int, int> *input_to_mouse_click,
+                 std::unordered_map<int, int> *release_to_mouse_click,
+                 std::unordered_map<int, int> *input_to_button_toggle,
+                 std::unordered_map<int, int> *release_to_button_toggle,
+                 std::unordered_map<int, WORD> *input_to_key_tap,
+                 std::unordered_map<int, WORD> *release_to_key_tap,
+                 std::unordered_map<int, WORD> *input_to_key_hold,
+                 std::unordered_map<int, std::function<void()>> *input_to_logic_before,
+                 std::unordered_map<int, std::function<void()>> *input_to_logic_after,
+                 std::unordered_map<int, std::function<void()>> *release_to_logic_before,
+                 std::unordered_map<int, std::function<void()>> *release_to_logic_after);
+    void moveMouse(const int x, const int y);
+    void moveMouseRelative(const int x, const int y);
+    void click(const int button, const std::function<void()> callback = nullptr);
+    void handleToMouseAbsoluteMove(const int &input, const int eventType);
+    void handleToClick(const int &input, const int eventType);
+    void handleToClick(const int &input, const int button, const int eventType);
+    void handleToButtonToggle(const int &input, const int eventType);
+    void handleToButtonToggle(const int &input, const int button, const int eventType);
+    void handleToKeyTap(const int &input, const int eventType);
+    void handleToKeyTap(const int &input, const int key, const int eventType);
+    void handleToKeyHold(const int &input);
+    void handleToKeyHold(const int &input, const int key);
+    void handleState(int *const state, const bool is_pressed);
 
   private:
-    void pressThenRelease(int key_to_tap, std::function<void()> callback = nullptr);
-    void clickAndHoldButton(int button_to_click, std::function<void()> callback = nullptr);
-    void releaseButton(int button_to_release, std::function<void()> callback = nullptr);
-    void clickThenRelease(int button_to_click, std::function<void()> callback = nullptr);
-    void sendInput(int key, DWORD flags);
-    void actionCallback(const std::string &input, const bool on_press, const bool before);
-    std::unordered_map<std::string, std::string> *buttonState;
-    std::unordered_map<std::string, WORD> *input_to_key_tap;
-    std::unordered_map<std::string, WORD> *input_to_key_hold;
-    std::unordered_map<std::string, WORD> *release_to_key_tap;
-    std::unordered_map<std::string, std::pair<int, int> *> *input_to_mouse_move;
-    std::unordered_map<std::string, int> *input_to_mouse_click;
-    std::unordered_map<std::string, int> *input_to_mouse_button_hold_or_release;
-    std::unordered_map<std::string, std::pair<int, int> *> *release_to_mouse_move;
-    std::unordered_map<std::string, std::function<void()>> *input_to_logic_before;
-    std::unordered_map<std::string, std::function<void()>> *input_to_logic_after;
-    std::unordered_map<std::string, std::function<void()>> *release_to_logic_before;
-    std::unordered_map<std::string, std::function<void()>> *release_to_logic_after;
-    std::unordered_map<int, DWORD>
-        mouse_mapping = {
-            {SDL_BUTTON_LEFT, VK_LBUTTON},
-            {SDL_BUTTON_RIGHT, VK_RBUTTON},
-            {SDL_BUTTON_MIDDLE, VK_MBUTTON}};
-    std::unordered_map<int, DWORD> mouse_down_mapping = {
+    std::unordered_set<int> PRESSED_STATES = {PRESSED, JUST_PRESSED};
+    std::unordered_set<int> RELEASED_STATES = {JUST_RELEASED, RELEASED};
+    std::unordered_map<int, DWORD> BUTTON_ID_TO_PRESS_EVENT = {
         {SDL_BUTTON_LEFT, MOUSEEVENTF_LEFTDOWN},
         {SDL_BUTTON_RIGHT, MOUSEEVENTF_RIGHTDOWN},
         {SDL_BUTTON_MIDDLE, MOUSEEVENTF_MIDDLEDOWN}};
-    std::unordered_map<int, DWORD> mouse_up_mapping = {
+    std::unordered_map<int, DWORD> BUTOTN_ID_TO_RELEASE_EVENT = {
         {SDL_BUTTON_LEFT, MOUSEEVENTF_LEFTUP},
         {SDL_BUTTON_RIGHT, MOUSEEVENTF_RIGHTUP},
         {SDL_BUTTON_MIDDLE, MOUSEEVENTF_MIDDLEUP}};
+    void sendInput(const int key, const DWORD flags);
+    void actionCallback(const int &input, const bool on_press, const bool before);
+    void pressButton(const int button_to_click, const std::function<void()> callback = nullptr);
+    void releaseButton(const int button_to_release, const std::function<void()> callback = nullptr);
+    void pressThenRelease(const int key_to_tap, const std::function<void()> callback = nullptr);
+    void clickThenRelease(const int button_to_click, const std::function<void()> callback = nullptr);
+    std::unordered_map<int, int> *buttonState;
+    std::unordered_map<int, std::pair<int, int> *> *input_to_mouse_move;
+    std::unordered_map<int, std::pair<int, int> *> *release_to_mouse_move;
+    std::unordered_map<int, int> *input_to_mouse_click;
+    std::unordered_map<int, int> *release_to_mouse_click;
+    std::unordered_map<int, int> *input_to_button_toggle;
+    std::unordered_map<int, int> *release_to_button_toggle;
+    std::unordered_map<int, WORD> *input_to_key_tap;
+    std::unordered_map<int, WORD> *release_to_key_tap;
+    std::unordered_map<int, WORD> *input_to_key_hold;
+    std::unordered_map<int, std::function<void()>> *input_to_logic_before;
+    std::unordered_map<int, std::function<void()>> *input_to_logic_after;
+    std::unordered_map<int, std::function<void()>> *release_to_logic_before;
+    std::unordered_map<int, std::function<void()>> *release_to_logic_after;
 };
 
 #endif // FUNCTIONS_H
