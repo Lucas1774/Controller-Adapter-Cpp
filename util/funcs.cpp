@@ -11,7 +11,7 @@ void Functions::setMaps(std::unordered_map<std::string, std::string> *buttonStat
                         std::unordered_map<std::string, std::pair<int, int> *> *input_to_mouse_move,
                         std::unordered_map<std::string, int> *input_to_mouse_click,
                         std::unordered_map<std::string, int> *input_to_mouse_button_hold_or_release,
-                        std::unordered_map<std::string, std::pair<int, int>> *release_to_mouse_move,
+                        std::unordered_map<std::string, std::pair<int, int> *> *release_to_mouse_move,
                         std::unordered_map<std::string, std::function<void()>> *input_to_logic_before,
                         std::unordered_map<std::string, std::function<void()>> *input_to_logic_after,
                         std::unordered_map<std::string, std::function<void()>> *release_to_logic_before,
@@ -135,23 +135,31 @@ void Functions::handleToMouseAbsoluteMoveInput(const std::string &input) {
 }
 
 void Functions::handleToClickInput(const std::string &input) {
+    int button = (*input_to_mouse_click)[input];
+    handleToClickInput(input, button);
+}
+
+void Functions::handleToClickInput(const std::string &input, int button) {
     if ((*buttonState)[input] == "JUST_PRESSED") {
         actionCallback(input, true, true);
-        int button_to_click = (*input_to_mouse_click)[input];
-        std::thread([=] { clickThenRelease(button_to_click, [=] { actionCallback(input, true, false); }); })
+        std::thread([=] { clickThenRelease(button, [=] { actionCallback(input, true, false); }); })
             .detach();
     }
 }
 
 void Functions::handleToClickAndHoldOrReleaseInput(const std::string &input) {
+    int button = (*input_to_mouse_button_hold_or_release)[input];
+    handleToClickAndHoldOrReleaseInput(input, button);
+}
+
+void Functions::handleToClickAndHoldOrReleaseInput(const std::string &input, int button) {
     if ((*buttonState)[input] == "JUST_PRESSED") {
         actionCallback(input, true, true);
-        int button_to_click_or_release = (*input_to_mouse_button_hold_or_release)[input];
-        if (!(GetAsyncKeyState(button_to_click_or_release) & 0x8000)) {
-            std::thread([=] { clickAndHoldButton(button_to_click_or_release, [=] { actionCallback(input, true, false); }); })
+        if (!(GetAsyncKeyState(button) & 0x8000)) {
+            std::thread([=] { clickAndHoldButton(button, [=] { actionCallback(input, true, false); }); })
                 .detach();
         } else {
-            std::thread([=] { releaseButton(button_to_click_or_release, [=] { actionCallback(input, true, false); }); })
+            std::thread([=] { releaseButton(button, [=] { actionCallback(input, true, false); }); })
                 .detach();
         }
     }
@@ -160,7 +168,7 @@ void Functions::handleToClickAndHoldOrReleaseInput(const std::string &input) {
 void Functions::handleToMouseMoveRelease(const std::string &input) {
     if ((*buttonState)[input] == "JUST_RELEASED") {
         actionCallback(input, false, true);
-        moveMouse((*release_to_mouse_move)[input].first, (*release_to_mouse_move)[input].second);
+        moveMouse((*release_to_mouse_move)[input]->first, (*release_to_mouse_move)[input]->second);
         actionCallback(input, false, false);
     }
 }

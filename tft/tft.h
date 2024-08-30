@@ -19,7 +19,7 @@ enum MouseMovementWithPadMode {
     BOARD,
     ITEMS,
     SHOP,
-    AUGMENT,
+    CARDS,
 };
 enum Direction {
     UP,
@@ -30,7 +30,11 @@ enum Direction {
 struct State {
     int boardRow;
     int boardColumn;
+    int itemIndex;
     int shopIndex;
+    int cardRow;
+    int cardColumn;
+    MouseMovementWithPadMode mode;
     std::pair<int, int> mouse_target;
 };
 extern const std::vector<std::vector<std::pair<int, int>>> BOARD_COORDINATES;

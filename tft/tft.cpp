@@ -18,8 +18,15 @@ const std::vector<std::vector<std::pair<int, int>>> BOARD_COORDINATES = {
     {{611, 482}, {727, 487}, {845, 489}, {961, 485}, {1081, 484}, {1189, 485}, {1314, 489}},
     {{567, 423}, {680, 426}, {794, 427}, {904, 427}, {1023, 429}, {1133, 422}, {1246, 420}}};
 
-std::vector<std::pair<int, int>> SHOP_COORDINATES = {
+const std::vector<std::pair<int, int>> ITEM_COORDINATES = {
     {300, 770}, {340, 735}, {320, 710}, {355, 675}, {410, 680}, {335, 645}, {390, 645}, {445, 645}, {350, 610}, {400, 610}};
+
+const std::vector<std::pair<int, int>> SHOP_COORDINATES = {
+    {574, 991}, {778, 989}, {980, 986}, {1182, 982}, {1370, 984}};
+
+const std::vector<std::vector<std::pair<int, int>>> CARD_COORDINATES = {
+    {{553, 580}, {963, 580}, {1380, 583}},
+    {{552, 865}, {959, 866}, {1365, 865}}};
 
 const int BOARD_ADJACENCY_MATRIX[10][10] = {
     {NONE, UP, NONE, NONE, NONE, NONE, NONE, NONE, DOWN, NONE},  // 0
@@ -57,39 +64,35 @@ void run(std::unordered_map<std::string, std::string> &buttonState, bool hasTrig
 
     int center_x = screenWidth / 2;
     int center_y = screenHeight / 2;
+    State state = {2, 3, 0, 2, 0, 1, BOARD, {}};
 
-    MouseMovementWithPadMode mode = BOARD;
-    State state = {2, 3, 0, {}};
-
-    auto INPUT_TO_KEY_TAP = std::unordered_map<std::string, WORD>{{"B", 'E'}, {"X", 'F'}, {"Y", 'D'}, {"SELECT", 'W'}, {"R2", 'R'}, {"L2", 'Q'}};
+    auto INPUT_TO_KEY_TAP = std::unordered_map<std::string, WORD>{{"B", 'E'}, {"X", 'F'}, {"Y", 'D'}, {"L3", 'W'}, {"R2", 'R'}, {"L2", 'Q'}};
 
     auto INPUT_TO_MOUSE_CLICK = std::unordered_map<std::string, int>{{"START", SDL_BUTTON_LEFT}};
 
+    // TODO: think if I want to keep passing a reference or save this for static targets and just call move mouse for dynamic ones
     auto INPUT_TO_MOUSE_MOVE = std::unordered_map<std::string, std::pair<int, int> *>{
         {"LEFT", &state.mouse_target},
         {"RIGHT", &state.mouse_target},
         {"UP", &state.mouse_target},
         {"DOWN", &state.mouse_target},
-        {"R1", &SHOP_COORDINATES[0]},
-        {"L1", &SHOP_COORDINATES[0]}};
+        {"R1", &state.mouse_target},
+        {"L1", &state.mouse_target},
+        {"R3", &state.mouse_target}};
 
-    auto INPUT_TO_MOUSE_BUTTON_HOLD_OR_RELEASE = std::unordered_map<std::string, int>{{"A", SDL_BUTTON_LEFT}};
-
-    auto RELEASE_TO_MOUSE_MOVE = std::unordered_map<std::string, std::pair<int, int>>{
-        {"R1", BOARD_COORDINATES[state.boardRow][state.boardColumn]},
-        {"L1", BOARD_COORDINATES[state.boardRow][state.boardColumn]},
+    auto RELEASE_TO_MOUSE_MOVE = std::unordered_map<std::string, std::pair<int, int> *>{
+        {"R1", &state.mouse_target},
+        {"L1", &state.mouse_target},
     };
 
     auto INPUT_TO_LOGIC_BEFORE = std::unordered_map<std::string, std::function<void()>>{
-        {"START", [&]() { functions.moveMouse(center_x, center_y); }},
-        {"R1", [&]() { state.shopIndex = 0; }},
-        {"L1", [&]() { state.shopIndex = 0; }},
-        {"LEFT", [&]() { updateAbstractState(mode, Direction::LEFT, state); }},
-        {"RIGHT", [&]() { updateAbstractState(mode, Direction::RIGHT, state); }},
-        {"UP", [&]() { updateAbstractState(mode, Direction::UP, state); }},
-        {"DOWN", [&]() { updateAbstractState(mode, Direction::DOWN, state); }}};
+        {"START", [&]() { functions.moveMouse(956, 993); }},
+        {"LEFT", [&]() { updateAbstractState(state.mode, Direction::LEFT, state); }},
+        {"RIGHT", [&]() { updateAbstractState(state.mode, Direction::RIGHT, state); }},
+        {"UP", [&]() { updateAbstractState(state.mode, Direction::UP, state); }},
+        {"DOWN", [&]() { updateAbstractState(state.mode, Direction::DOWN, state); }}};
 
-    functions.setMaps(&buttonState, &INPUT_TO_KEY_TAP, nullptr, nullptr, &INPUT_TO_MOUSE_MOVE, &INPUT_TO_MOUSE_CLICK, &INPUT_TO_MOUSE_BUTTON_HOLD_OR_RELEASE, &RELEASE_TO_MOUSE_MOVE, &INPUT_TO_LOGIC_BEFORE, nullptr, nullptr, nullptr);
+    functions.setMaps(&buttonState, &INPUT_TO_KEY_TAP, nullptr, nullptr, &INPUT_TO_MOUSE_MOVE, &INPUT_TO_MOUSE_CLICK, nullptr, &RELEASE_TO_MOUSE_MOVE, &INPUT_TO_LOGIC_BEFORE, nullptr, nullptr, nullptr);
 
     try {
         float leftX, leftY, rightX, rightY;
@@ -165,9 +168,29 @@ void run(std::unordered_map<std::string, std::string> &buttonState, bool hasTrig
                     continue;
                 }
                 if (buttonState["L1"] == "JUST_PRESSED") {
-                    mode = ITEMS;
+                    state.mode = ITEMS;
+                    state.mouse_target = ITEM_COORDINATES[state.itemIndex];
                 } else if (buttonState["L1"] == "JUST_RELEASED") {
-                    mode = BOARD;
+                    state.mode = BOARD;
+                    state.mouse_target = BOARD_COORDINATES[state.boardRow][state.boardColumn];
+                }
+                if (buttonState["R1"] == "JUST_PRESSED") {
+                    state.mode = SHOP;
+                    state.mouse_target = SHOP_COORDINATES[state.shopIndex];
+                } else if (buttonState["R1"] == "JUST_RELEASED") {
+                    state.mode = BOARD;
+                    state.mouse_target = BOARD_COORDINATES[state.boardRow][state.boardColumn];
+                }
+                if (buttonState["R3"] == "JUST_PRESSED") {
+                    if (state.mode == CARDS) {
+                        state.mode = BOARD;
+                        state.mouse_target = BOARD_COORDINATES[state.boardRow][state.boardColumn];
+                    } else {
+                        state.mode = CARDS;
+                        state.cardRow = 0; // do not memorize previous location for cards (risky business)
+                        state.cardColumn = 1;
+                        state.mouse_target = CARD_COORDINATES[state.cardRow][state.cardColumn];
+                    }
                 }
 
                 // action
@@ -180,11 +203,13 @@ void run(std::unordered_map<std::string, std::string> &buttonState, bool hasTrig
                 for (const auto &[input, _] : RELEASE_TO_MOUSE_MOVE) {
                     functions.handleToMouseMoveRelease(input);
                 }
-                for (const auto &[input, _] : INPUT_TO_MOUSE_BUTTON_HOLD_OR_RELEASE) {
-                    functions.handleToClickAndHoldOrReleaseInput(input);
-                }
                 for (const auto &[input, _] : INPUT_TO_MOUSE_CLICK) {
                     functions.handleToClickInput(input);
+                }
+                if (state.mode == SHOP || state.mode == CARDS) {
+                    functions.handleToClickInput("A", SDL_BUTTON_LEFT);
+                } else {
+                    functions.handleToClickAndHoldOrReleaseInput("A", SDL_BUTTON_LEFT);
                 }
 
                 if (isRightXActive || isRightYActive) {
@@ -246,9 +271,6 @@ void updateAbstractState(MouseMovementWithPadMode mode, Direction direction, Sta
                 column = (state.boardColumn + 1) % 9;
             }
             break;
-        default:
-            row = state.boardColumn;
-            column = state.boardColumn;
         }
         state.boardRow = row;
         state.boardColumn = column;
@@ -257,13 +279,42 @@ void updateAbstractState(MouseMovementWithPadMode mode, Direction direction, Sta
 
     case ITEMS:
         for (int i = 0; i < 10; i++) {
-            if (BOARD_ADJACENCY_MATRIX[state.shopIndex][i] == direction) {
-                state.shopIndex = i;
-                state.mouse_target = SHOP_COORDINATES[state.shopIndex];
+            if (BOARD_ADJACENCY_MATRIX[state.itemIndex][i] == direction) {
+                state.itemIndex = i;
                 break;
             }
         }
+        state.mouse_target = ITEM_COORDINATES[state.itemIndex];
         break;
+
+    case SHOP:
+        switch (direction) {
+        case Direction::RIGHT:
+            state.shopIndex = (state.shopIndex + 1) % 5;
+            break;
+        case Direction::LEFT:
+            state.shopIndex = (state.shopIndex + 4) % 5;
+            break;
+        default:
+            break;
+        }
+        state.mouse_target = SHOP_COORDINATES[state.shopIndex];
+        break;
+
+    case CARDS:
+        switch (direction) {
+        case Direction::UP:
+        case Direction::DOWN:
+            state.cardRow = (state.cardRow + 1) % 2;
+            break;
+        case Direction::RIGHT:
+            state.cardColumn = (state.cardColumn + 1) % 3;
+            break;
+        case Direction::LEFT:
+            state.cardColumn = (state.cardColumn + 2) % 3;
+            break;
+        }
+        state.mouse_target = CARD_COORDINATES[state.cardRow][state.cardColumn];
 
     default:
         break;

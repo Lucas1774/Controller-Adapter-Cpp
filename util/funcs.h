@@ -16,7 +16,7 @@ class Functions {
                  std::unordered_map<std::string, std::pair<int, int> *> *input_to_mouse_move,
                  std::unordered_map<std::string, int> *input_to_mouse_click,
                  std::unordered_map<std::string, int> *input_to_mouse_button_hold_or_release,
-                 std::unordered_map<std::string, std::pair<int, int>> *release_to_mouse_move,
+                 std::unordered_map<std::string, std::pair<int, int> *> *release_to_mouse_move,
                  std::unordered_map<std::string, std::function<void()>> *input_to_logic_before,
                  std::unordered_map<std::string, std::function<void()>> *input_to_logic_after,
                  std::unordered_map<std::string, std::function<void()>> *release_to_logic_before,
@@ -27,7 +27,9 @@ class Functions {
     void handleToKeyHoldInput(const std::string &input);
     void handleToMouseAbsoluteMoveInput(const std::string &input);
     void handleToClickInput(const std::string &input);
+    void handleToClickInput(const std::string &input, int button);
     void handleToClickAndHoldOrReleaseInput(const std::string &input);
+    void handleToClickAndHoldOrReleaseInput(const std::string &input, int button);
     void handleToMouseMoveRelease(const std::string &input);
     void handleToKeyTapRelease(const std::string &input);
     void handleState(std::string *const state, bool is_pressed);
@@ -46,7 +48,7 @@ class Functions {
     std::unordered_map<std::string, std::pair<int, int> *> *input_to_mouse_move;
     std::unordered_map<std::string, int> *input_to_mouse_click;
     std::unordered_map<std::string, int> *input_to_mouse_button_hold_or_release;
-    std::unordered_map<std::string, std::pair<int, int>> *release_to_mouse_move;
+    std::unordered_map<std::string, std::pair<int, int> *> *release_to_mouse_move;
     std::unordered_map<std::string, std::function<void()>> *input_to_logic_before;
     std::unordered_map<std::string, std::function<void()>> *input_to_logic_after;
     std::unordered_map<std::string, std::function<void()>> *release_to_logic_before;

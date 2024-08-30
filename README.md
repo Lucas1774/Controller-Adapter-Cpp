@@ -1,10 +1,11 @@
 # Usage
 
-Just double-click the .bat file. Use Windows' Game Controllers to map button ID to button in the `config.json` file.  
+Edit the .bat file to change game. Double-click it to run the program.  Use Windows' Game Controllers to map button ID to button in the `config.json` file (see more details [here](https://github.com/Lucas1774/controller-adapter/issues/1#issuecomment-2290078361)).  
 In some controllers, the pad inputs are handled differently, and don't need id mapping. In others, they are regular buttons. The program will correctly handle either. Back triggers are similar in this aspect, and can be either buttons or analog axis.
 It is possible to configure whether the program is activated on boot or not, as well as it is to map a button to toggle activation. When deactivated, it will just listen to an activation input.
 
 ## Swarm
+This game has custom config. See inside its folder.
 
     START -> ESCAPE
     A -> LEFT CLICK
@@ -37,3 +38,12 @@ It is possible to configure whether the program is activated on boot or not, as 
     LEFT JOYSTICK (hold) -> move
     RIGHT JOYSTICK (hold) -> move mouse
     UP, DOWN, LEFT, RIGHT -> move the mouse to pick a card or reroll
+
+TODOS:
+- implement little legend movement
+- implement free mouse movement
+- think about how to release something (maybe just drop champions in shop and items on top of nothing?)
+- implement turbo to navigate
+- think about portal selection (free clicking, maybe L3)
+- think whether to get rid of press to hold click all together?
+- check performance
