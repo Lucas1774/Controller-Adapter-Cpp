@@ -61,10 +61,10 @@ const std::unordered_map<std::string, int> BUTTON_NAME_TO_BUTTON_ID = {
     {"RIGHT_JS_DOWN", RIGHT_JS_DOWN}};
 
 enum ButtonState {
-    PRESSED = 0,
-    JUST_PRESSED = 1,
-    JUST_RELEASED = 2,
-    RELEASED = 3
+    PRESSED,
+    JUST_PRESSED,
+    JUST_RELEASED,
+    RELEASED,
 };
 
 enum Direction {

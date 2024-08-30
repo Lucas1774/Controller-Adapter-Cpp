@@ -68,11 +68,14 @@ void run(std::unordered_map<int, int> &buttonState, bool hasTriggers, Json::Valu
     int center_x = screenWidth / 2;
     int center_y = screenHeight / 2;
     int vertical_adjustment = screenHeight / 10;
-    State state = {2, 3, 0, 2, 0, 1, BOARD, {}};
+    auto now = std::chrono::steady_clock::now();
+    State state = {2, 3, 0, 2, 0, 1, BOARD, {}, {{LEFT, now}, {RIGHT, now}, {UP, now}, {DOWN, now}}, {{LEFT, now}, {RIGHT, now}, {UP, now}, {DOWN, now}}, {{LEFT, false}, {RIGHT, false}, {UP, false}, {DOWN, false}}};
+
+    auto TURBO_INPUTS = std::unordered_set<int>{PAD_LEFT, PAD_RIGHT, PAD_UP, PAD_DOWN};
 
     auto INPUT_TO_KEY_TAP = std::unordered_map<int, WORD>{{B, 'E'}, {X, 'F'}, {Y, 'D'}, {L3, 'W'}, {R2, 'R'}, {L2, 'Q'}};
 
-    auto INPUT_TO_MOUSE_CLICK = std::unordered_map<int, int>{{START, SDL_BUTTON_LEFT}, {A, SDL_BUTTON_LEFT}, {SELECT, SDL_BUTTON_RIGHT}}; // A to left. if free to right would be an idea if it wasnt for portals :/
+    auto INPUT_TO_MOUSE_CLICK = std::unordered_map<int, int>{{START, SDL_BUTTON_LEFT}, {A, SDL_BUTTON_LEFT}, {SELECT, SDL_BUTTON_RIGHT}};
 
     // TODO: think if I want to keep passing a reference or save this for static targets and just call move mouse for dynamic ones
     auto INPUT_TO_MOUSE_MOVE = std::unordered_map<int, std::pair<int, int> *>{
@@ -91,10 +94,10 @@ void run(std::unordered_map<int, int> &buttonState, bool hasTriggers, Json::Valu
 
     auto INPUT_TO_LOGIC_BEFORE = std::unordered_map<int, std::function<void()>>{
         {START, [&]() { functions.moveMouse(956, 993); }},
-        {PAD_LEFT, [&]() { updateAbstractState(LEFT, state); }},
-        {PAD_RIGHT, [&]() { updateAbstractState(RIGHT, state); }},
-        {PAD_UP, [&]() { updateAbstractState(UP, state); }},
-        {PAD_DOWN, [&]() { updateAbstractState(DOWN, state); }}};
+        {PAD_LEFT, [&]() { updateAbstractState(LEFT, buttonState[PAD_LEFT], state); }},
+        {PAD_RIGHT, [&]() { updateAbstractState(RIGHT, buttonState[PAD_RIGHT], state); }},
+        {PAD_UP, [&]() { updateAbstractState(UP, buttonState[PAD_UP], state); }},
+        {PAD_DOWN, [&]() { updateAbstractState(DOWN, buttonState[PAD_DOWN], state); }}};
 
     functions.setMaps(&buttonState, &INPUT_TO_MOUSE_MOVE, &RELEASE_TO_MOUSE_MOVE, &INPUT_TO_MOUSE_CLICK, nullptr, nullptr, nullptr, &INPUT_TO_KEY_TAP, nullptr, nullptr, &INPUT_TO_LOGIC_BEFORE, nullptr, nullptr, nullptr);
 
@@ -196,12 +199,18 @@ void run(std::unordered_map<int, int> &buttonState, bool hasTriggers, Json::Valu
                         state.mouse_target = CARD_COORDINATES[state.cardRow][state.cardColumn];
                     }
                 }
+                if (buttonState[START] == JUST_PRESSED) {
+                    functions.moveMouse(956, 993);
+                }
 
                 // action
                 for (const auto &[input, _] : INPUT_TO_KEY_TAP) {
                     functions.handleToKeyTap(input, JUST_PRESSED);
                 }
                 for (const auto &[input, _] : INPUT_TO_MOUSE_MOVE) {
+                    if (TURBO_INPUTS.find(input) != TURBO_INPUTS.end()) {
+                        functions.handleToMouseAbsoluteMove(input, PRESSED);
+                    }
                     functions.handleToMouseAbsoluteMove(input, JUST_PRESSED);
                 }
                 for (const auto &[input, _] : RELEASE_TO_MOUSE_MOVE) {
@@ -242,96 +251,109 @@ void run(std::unordered_map<int, int> &buttonState, bool hasTriggers, Json::Valu
     }
 }
 
-void updateAbstractState(const Direction direction, State &state) {
-    if (state.mode == FREE) {
-        state.mode = BOARD;
-    }
-    switch (state.mode) {
-    case BOARD:
-        int row;
-        int column;
-        switch (direction) {
-        case UP:
-            row = (state.boardRow + 1) % 5;
-            column;
-            if (row != 0) {
-                column = state.boardColumn > 6 ? 6 : state.boardColumn;
-            } else {
-                column = state.boardColumn;
+void updateAbstractState(const Direction direction, int buttonState, State &state) {
+    auto now = std::chrono::steady_clock::now();
+    auto last_executed = state.pad_to_last_executed[direction];
+    if (now - last_executed > std::chrono::milliseconds(50)) {
+        auto is_unleashed = state.pad_to_is_unleashed[direction];
+        auto last_pressed = state.pad_to_last_pressed[direction];
+        if (is_unleashed || now - last_pressed > std::chrono::milliseconds(200)) {
+            state.pad_to_last_executed[direction] = now;
+            state.pad_to_is_unleashed[direction] = buttonState == PRESSED;
+            if (buttonState == JUST_PRESSED) {
+                state.pad_to_last_pressed[direction] = now;
             }
-            break;
-        case DOWN:
-            row = (state.boardRow + 4) % 5;
-            column;
-            if (row != 0) {
-                column = state.boardColumn > 6 ? 6 : state.boardColumn;
-            } else {
-                column = state.boardColumn;
+            if (state.mode == FREE) {
+                state.mode = BOARD;
             }
-            break;
-        case LEFT:
-            row = state.boardRow;
-            if (row != 0) {
-                column = (state.boardColumn + 6) % 7;
-            } else {
-                column = (state.boardColumn + 8) % 9;
-            }
-            break;
-        case RIGHT:
-            row = state.boardRow;
-            if (row != 0) {
-                column = (state.boardColumn + 1) % 7;
-            } else {
-                column = (state.boardColumn + 1) % 9;
-            }
-            break;
-        }
-        state.boardRow = row;
-        state.boardColumn = column;
-        state.mouse_target = BOARD_COORDINATES[state.boardRow][state.boardColumn];
-        break;
+            switch (state.mode) {
+            case BOARD:
+                int row;
+                int column;
+                switch (direction) {
+                case UP:
+                    row = (state.boardRow + 1) % 5;
+                    column;
+                    if (row != 0) {
+                        column = state.boardColumn > 6 ? 6 : state.boardColumn;
+                    } else {
+                        column = state.boardColumn;
+                    }
+                    break;
+                case DOWN:
+                    row = (state.boardRow + 4) % 5;
+                    column;
+                    if (row != 0) {
+                        column = state.boardColumn > 6 ? 6 : state.boardColumn;
+                    } else {
+                        column = state.boardColumn;
+                    }
+                    break;
+                case LEFT:
+                    row = state.boardRow;
+                    if (row != 0) {
+                        column = (state.boardColumn + 6) % 7;
+                    } else {
+                        column = (state.boardColumn + 8) % 9;
+                    }
+                    break;
+                case RIGHT:
+                    row = state.boardRow;
+                    if (row != 0) {
+                        column = (state.boardColumn + 1) % 7;
+                    } else {
+                        column = (state.boardColumn + 1) % 9;
+                    }
+                    break;
+                }
+                state.boardRow = row;
+                state.boardColumn = column;
+                state.mouse_target = BOARD_COORDINATES[state.boardRow][state.boardColumn];
+                break;
 
-    case ITEMS:
-        for (int i = 0; i < 10; i++) {
-            if (BOARD_ADJACENCY_MATRIX[state.itemIndex][i] == direction) {
-                state.itemIndex = i;
+            case ITEMS:
+                for (int i = 0; i < 10; i++) {
+                    if (BOARD_ADJACENCY_MATRIX[state.itemIndex][i] == direction) {
+                        state.itemIndex = i;
+                        break;
+                    }
+                }
+                state.mouse_target = ITEM_COORDINATES[state.itemIndex];
+                break;
+
+            case SHOP:
+                switch (direction) {
+                case RIGHT:
+                    state.shopIndex = (state.shopIndex + 1) % 5;
+                    break;
+                case LEFT:
+                    state.shopIndex = (state.shopIndex + 4) % 5;
+                    break;
+                default:
+                    break;
+                }
+                state.mouse_target = SHOP_COORDINATES[state.shopIndex];
+                break;
+
+            case CARDS:
+                switch (direction) {
+                case UP:
+                case DOWN:
+                    state.cardRow = (state.cardRow + 1) % 2;
+                    break;
+                case RIGHT:
+                    state.cardColumn = (state.cardColumn + 1) % 3;
+                    break;
+                case LEFT:
+                    state.cardColumn = (state.cardColumn + 2) % 3;
+                    break;
+                }
+                state.mouse_target = CARD_COORDINATES[state.cardRow][state.cardColumn];
+
+            default:
                 break;
             }
         }
-        state.mouse_target = ITEM_COORDINATES[state.itemIndex];
-        break;
-
-    case SHOP:
-        switch (direction) {
-        case RIGHT:
-            state.shopIndex = (state.shopIndex + 1) % 5;
-            break;
-        case LEFT:
-            state.shopIndex = (state.shopIndex + 4) % 5;
-            break;
-        default:
-            break;
-        }
-        state.mouse_target = SHOP_COORDINATES[state.shopIndex];
-        break;
-
-    case CARDS:
-        switch (direction) {
-        case UP:
-        case DOWN:
-            state.cardRow = (state.cardRow + 1) % 2;
-            break;
-        case RIGHT:
-            state.cardColumn = (state.cardColumn + 1) % 3;
-            break;
-        case LEFT:
-            state.cardColumn = (state.cardColumn + 2) % 3;
-            break;
-        }
-        state.mouse_target = CARD_COORDINATES[state.cardRow][state.cardColumn];
-
-    default:
-        break;
     }
 }
 } // namespace tft

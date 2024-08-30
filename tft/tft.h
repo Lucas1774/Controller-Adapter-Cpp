@@ -6,6 +6,7 @@
 #include <SDL2/SDL.h>
 #include <json/json.h>
 #include <unordered_map>
+#include <chrono>
 
 namespace tft {
 void run(
@@ -31,8 +32,11 @@ struct State {
     int cardColumn;
     MouseMovementWithPadMode mode;
     std::pair<int, int> mouse_target;
+    std::unordered_map<int, std::chrono::steady_clock::time_point> pad_to_last_pressed;
+    std::unordered_map<int, std::chrono::steady_clock::time_point> pad_to_last_executed;
+    std::unordered_map<int, bool> pad_to_is_unleashed;
 };
-void updateAbstractState(const Direction direction, State &state);
+void updateAbstractState(const Direction direction, int buttonState, State &state);
 } // namespace tft
 
 #endif // TFT_H

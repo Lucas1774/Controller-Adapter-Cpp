@@ -42,5 +42,3 @@ This game has custom config. See inside its folder.
 
 TODOS:
 - account for different resolutions
-- implement turbo to navigate
-- check performance
