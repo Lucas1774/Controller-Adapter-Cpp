@@ -1,5 +1,4 @@
 #include "tft.h"
-#include "constants.h"
 #include "funcs.h"
 #include <chrono>
 #include <cmath>
@@ -11,6 +10,8 @@
 #include <windows.h>
 
 namespace tft {
+const std::vector<std::pair<int, int>> MOVE_COORDINATES = {{483, 656}, {473, 438}, {542, 175}, {927, 180}, {1286, 198}, {1429, 473}, {1447, 671}, {918, 726}};
+
 const std::vector<std::vector<std::pair<int, int>>> BOARD_COORDINATES = {
     {{427, 756}, {544, 751}, {659, 757}, {776, 754}, {895, 756}, {1011, 754}, {1125, 754}, {1246, 752}, {1356, 752}},
     {{583, 632}, {699, 630}, {839, 634}, {960, 637}, {1096, 637}, {1214, 642}, {1340, 644}},
@@ -19,7 +20,7 @@ const std::vector<std::vector<std::pair<int, int>>> BOARD_COORDINATES = {
     {{567, 423}, {680, 426}, {794, 427}, {904, 427}, {1023, 429}, {1133, 422}, {1246, 420}}};
 
 const std::vector<std::pair<int, int>> ITEM_COORDINATES = {
-    {283, 698}, {326, 663}, {280, 626}, {325, 615}, {379, 615}, {311, 580}, {351, 580}, {406, 579}, {310, 547}, {365, 543}};
+    {295, 762}, {335, 728}, {309, 692}, {350, 667}, {409, 665}, {326, 637}, {384, 636}, {448, 635}, {347, 594}, {403, 594}};
 
 const std::vector<std::pair<int, int>> SHOP_COORDINATES = {
     {574, 991}, {778, 989}, {980, 986}, {1182, 982}, {1370, 984}};
@@ -31,7 +32,7 @@ const std::vector<std::vector<std::pair<int, int>>> CARD_COORDINATES = {
 const std::vector<std::pair<int, int>> LOCK_COORDINATES = {{1450, 905}, {28, 350}, {33, 436}, {34, 528}, {356, 473}, {344, 538}, {349, 636}};
 
 constexpr float MAX_RADIUS = 0.45;
-constexpr float HORIZONTAL_RADIUS_OFFSET = 0.9; // the board is not proportional to the screen it sits on, this will help adapt to that
+constexpr float HORIZONTAL_RADIUS_OFFSET = 1.1; // the board is not proportional to the screen it sits on, this will help adapt to that
 
 constexpr int BOARD_ADJACENCY_MATRIX[10][10] = {
     {NONE, UP, NONE, NONE, NONE, NONE, NONE, NONE, DOWN, NONE},  // 0
@@ -116,19 +117,20 @@ void run(std::unordered_map<int, int> &buttonState,
         {R1, &state.mouse_target},
         {L1, &state.mouse_target},
         {R3, &state.mouse_target},
-        {L3, &state.mouse_target}};
+        {L3, &state.mouse_target},
+    };
 
     const auto RELEASE_TO_MOUSE_MOVE = std::unordered_map<int, std::pair<int, int> *>{
         {R1, &state.mouse_target},
         {L1, &state.mouse_target},
     };
 
-    const auto INPUT_TO_LOGIC_BEFORE = std::unordered_map<int, std::function<void()>>{
-        {START, [&]() { functions.moveMouse(956 * res_scaling_x, 993 * res_scaling_y); }},
-        {PAD_LEFT, [&]() { updateAbstractState(LEFT, buttonState.at(PAD_LEFT), state, res_scaling_x, res_scaling_y); }},
-        {PAD_RIGHT, [&]() { updateAbstractState(RIGHT, buttonState[PAD_RIGHT], state, res_scaling_x, res_scaling_y); }},
-        {PAD_UP, [&]() { updateAbstractState(UP, buttonState[PAD_UP], state, res_scaling_x, res_scaling_y); }},
-        {PAD_DOWN, [&]() { updateAbstractState(DOWN, buttonState[PAD_DOWN], state, res_scaling_x, res_scaling_y); }}};
+    const auto INPUT_TO_LOGIC_BEFORE = std::unordered_map<int, std::function<bool()>>{
+        {START, [&]() { functions.moveMouse(956 * res_scaling_x, 993 * res_scaling_y); return true; }},
+        {PAD_LEFT, [&]() { return updateAbstractState(LEFT, buttonState.at(PAD_LEFT), state, res_scaling_x, res_scaling_y); }},
+        {PAD_RIGHT, [&]() { return updateAbstractState(RIGHT, buttonState[PAD_RIGHT], state, res_scaling_x, res_scaling_y); }},
+        {PAD_UP, [&]() { return updateAbstractState(UP, buttonState[PAD_UP], state, res_scaling_x, res_scaling_y); }},
+        {PAD_DOWN, [&]() { return updateAbstractState(DOWN, buttonState[PAD_DOWN], state, res_scaling_x, res_scaling_y); }}};
 
     functions.setMaps(&buttonState, &INPUT_TO_MOUSE_MOVE, &RELEASE_TO_MOUSE_MOVE, &INPUT_TO_MOUSE_CLICK, nullptr, nullptr, nullptr, &INPUT_TO_KEY_TAP, nullptr, nullptr, &INPUT_TO_LOGIC_BEFORE, nullptr, nullptr, nullptr);
 
@@ -170,6 +172,11 @@ void run(std::unordered_map<int, int> &buttonState,
                 leftY = SDL_JoystickGetAxis(joystick, LEFT_JS_Y_ID) / 32768.0f;
                 isLeftXActive = std::abs(leftX) > LEFT_JS_DEAD_ZONE;
                 isLeftYActive = std::abs(leftY) > LEFT_JS_DEAD_ZONE;
+
+                functions.handleState(buttonState[LEFT_JS_LEFT], isLeftXActive && leftX < 0);
+                functions.handleState(buttonState[LEFT_JS_RIGHT], isLeftXActive && leftX > 0);
+                functions.handleState(buttonState[LEFT_JS_UP], isLeftYActive && leftY < 0);
+                functions.handleState(buttonState[LEFT_JS_DOWN], isLeftYActive && leftY > 0);
 
                 rightX = SDL_JoystickGetAxis(joystick, RIGHT_JS_X_ID) / 32768.0f;
                 rightY = SDL_JoystickGetAxis(joystick, RIGHT_JS_Y_ID) / 32768.0f;
@@ -267,19 +274,19 @@ void run(std::unordered_map<int, int> &buttonState,
 
                 if (isRightXActive || isRightYActive) {
                     if (std::chrono::steady_clock::now() - lastUpdateTime > std::chrono::milliseconds(100)) {
-                        state.mode = FREE;
+                        state.mode = BOARD;
                         functions.moveMouseRelative(
                             round(rightX * RIGHT_JS_SENSITIVITY * 500 * res_scaling_x),
                             round(rightY * RIGHT_JS_SENSITIVITY * 500 * res_scaling_y));
                         lastUpdateTime = std::chrono::steady_clock::now();
                     }
                 } else if (isLeftXActive || isLeftYActive) {
-                    functions.moveMouse(
-                        round(leftX * center_x * MAX_RADIUS * HORIZONTAL_RADIUS_OFFSET * res_scaling_x + center_x),
-                        round((leftY * center_y * MAX_RADIUS * res_scaling_y + center_y) - vertical_adjustment));
-                    if (std::chrono::steady_clock::now() - lastUpdateTime > std::chrono::milliseconds(100)) {
-                        functions.click(SDL_BUTTON_RIGHT);
-                        lastUpdateTime = std::chrono::steady_clock::now();
+                    if (updateAbstractState(buttonState, state, res_scaling_x, res_scaling_y)) {
+                        functions.moveMouse(state.mouse_target.first, state.mouse_target.second);
+                        if (std::chrono::steady_clock::now() - lastUpdateTime > std::chrono::milliseconds(100)) {
+                            functions.click(SDL_BUTTON_RIGHT);
+                            lastUpdateTime = std::chrono::steady_clock::now();
+                        }
                     }
                 }
             }
@@ -295,7 +302,7 @@ void run(std::unordered_map<int, int> &buttonState,
     }
 }
 
-void updateAbstractState(const int direction, const int &buttonState, State &state, const float res_scaling_x, const float res_scaling_y) {
+bool updateAbstractState(const int direction, const int &buttonState, State &state, const float res_scaling_x, const float res_scaling_y) {
     auto now = std::chrono::steady_clock::now();
     auto last_executed = state.pad_to_last_executed[direction];
     if (now - last_executed > std::chrono::milliseconds(50)) {
@@ -306,10 +313,6 @@ void updateAbstractState(const int direction, const int &buttonState, State &sta
             state.pad_to_is_unleashed[direction] = buttonState == PRESSED;
             if (buttonState == JUST_PRESSED) {
                 state.pad_to_last_pressed[direction] = now;
-            }
-            if (state.mode == FREE) {
-                state.mode = BOARD;
-                return;
             }
             std::pair<int, int> coordinates;
             if (state.mode == BOARD) {
@@ -371,7 +374,43 @@ void updateAbstractState(const int direction, const int &buttonState, State &sta
                 coordinates = LOCK_COORDINATES[state.lockIndex];
             }
             state.mouse_target = {coordinates.first * res_scaling_x, coordinates.second * res_scaling_y};
+            return true;
         }
+        return false;
+    }
+    return false;
+}
+
+bool updateAbstractState(const std::unordered_map<int, int> &buttonState, State &state, const float res_scaling_x, const float res_scaling_y) {
+    static const int LEFT_MASK = 1;
+    static const int RIGHT_MASK = 2;
+    static const int UP_MASK = 4;
+    static const int DOWN_MASK = 8;
+
+    static const std::unordered_map<int, int> DIRECTION_TO_MOVE_INDEX = {
+        {LEFT_MASK | DOWN_MASK, 0},
+        {LEFT_MASK, 1},
+        {LEFT_MASK | UP_MASK, 2},
+        {UP_MASK, 3},
+        {RIGHT_MASK | DOWN_MASK, 6},
+        {RIGHT_MASK, 5},
+        {RIGHT_MASK | UP_MASK, 4},
+        {DOWN_MASK, 7}};
+
+    bool left = PRESSED_STATES.find(buttonState.at(LEFT_JS_LEFT)) != PRESSED_STATES.end();
+    bool right = PRESSED_STATES.find(buttonState.at(LEFT_JS_RIGHT)) != PRESSED_STATES.end();
+    bool up = PRESSED_STATES.find(buttonState.at(LEFT_JS_UP)) != PRESSED_STATES.end();
+    bool down = PRESSED_STATES.find(buttonState.at(LEFT_JS_DOWN)) != PRESSED_STATES.end();
+
+    int bitmask = (left * LEFT_MASK) | (right * RIGHT_MASK) | (up * UP_MASK) | (down * DOWN_MASK);
+
+    auto entry = DIRECTION_TO_MOVE_INDEX.find(bitmask);
+    if (DIRECTION_TO_MOVE_INDEX.find(bitmask) != DIRECTION_TO_MOVE_INDEX.end()) {
+        auto coordinates = MOVE_COORDINATES[entry->second];
+        state.mouse_target = {coordinates.first * res_scaling_x, coordinates.second * res_scaling_y};
+        return true;
+    } else {
+        return false;
     }
 }
 } // namespace tft

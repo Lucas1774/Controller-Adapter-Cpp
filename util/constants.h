@@ -2,6 +2,7 @@
 
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 
 enum Buttons {
     A,
@@ -73,3 +74,6 @@ enum Direction {
     LEFT,
     RIGHT,
 };
+
+const std::unordered_set<int> PRESSED_STATES = {PRESSED, JUST_PRESSED};
+const std::unordered_set<int> RELEASED_STATES = {RELEASED, JUST_RELEASED};

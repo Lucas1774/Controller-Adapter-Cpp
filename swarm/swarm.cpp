@@ -85,13 +85,13 @@ void run(std::unordered_map<int, int> &buttonState,
         {R1, 'R'},
         {L1, 'E'}};
 
-    const auto INPUT_TO_LOGIC_BEFORE = std::unordered_map<int, std::function<void()>>{
-        {R2, [&]() { functions.moveMouse(center_x, center_y); }},
-        {R3, [&]() { highPrecisionAlwaysOn = !highPrecisionAlwaysOn; }}};
+    const auto INPUT_TO_LOGIC_BEFORE = std::unordered_map<int, std::function<bool()>>{
+        {R2, [&]() { functions.moveMouse(center_x, center_y); return true;}},
+        {R3, [&]() { highPrecisionAlwaysOn = !highPrecisionAlwaysOn; return true;}}};
 
-    const auto RELEASE_TO_LOGIC_AFTER = std::unordered_map<int, std::function<void()>>{
-        {R1, [&]() { currentRadius = MAX_RADIUS_HIGH_PRECISION_OFF;; }},
-        {L1, [&]() { currentRadius = MAX_RADIUS_HIGH_PRECISION_OFF;; }}};
+    const auto RELEASE_TO_LOGIC_AFTER = std::unordered_map<int, std::function<bool()>>{
+        {R1, [&]() { currentRadius = MAX_RADIUS_HIGH_PRECISION_OFF; return true;}},
+        {L1, [&]() { currentRadius = MAX_RADIUS_HIGH_PRECISION_OFF; return true;}}};
 
     functions.setMaps(&buttonState, &INPUT_TO_MOUSE_MOVE, nullptr, &INPUT_TO_MOUSE_CLICK, nullptr, nullptr, nullptr, &INPUT_TO_KEY_TAP, &RELEASE_TO_KEY_TAP, &INPUT_TO_KEY_HOLD, &INPUT_TO_LOGIC_BEFORE, nullptr, nullptr, &RELEASE_TO_LOGIC_AFTER);
 
