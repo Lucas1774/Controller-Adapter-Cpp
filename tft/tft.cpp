@@ -10,7 +10,7 @@
 #include <windows.h>
 
 namespace tft {
-const std::vector<std::pair<int, int>> MOVE_COORDINATES = {{483, 656}, {473, 438}, {542, 175}, {927, 180}, {1286, 198}, {1429, 473}, {1447, 671}, {918, 726}};
+const std::vector<std::pair<int, int>> MOVE_COORDINATES = {{483, 656}, {473, 438}, {542, 175}, {927, 180}, {1286, 198}, {1418, 476}, {1447, 671}, {918, 726}};
 
 const std::vector<std::vector<std::pair<int, int>>> BOARD_COORDINATES = {
     {{427, 756}, {544, 751}, {659, 757}, {776, 754}, {895, 756}, {1011, 754}, {1125, 754}, {1246, 752}, {1356, 752}},
