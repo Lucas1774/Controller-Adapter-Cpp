@@ -11,24 +11,23 @@
 #include <windows.h>
 
 namespace swarm {
-void run(
-    std::unordered_map<int, int> &buttonState,
-    bool hasTriggers,
-    Json::Value &config,
-    int screenWidth,
-    int screenHeight,
-    SDL_Joystick *joystick) {
-    int LEFT_JS_X_ID = config["left_joystick_x_id"].asInt();
-    int LEFT_JS_Y_ID = config["left_joystick_y_id"].asInt();
-    int RIGHT_JS_X_ID = config["right_joystick_x_id"].asInt();
-    int RIGHT_JS_Y_ID = config["right_joystick_y_id"].asInt();
-    int LEFT_TRIGGER_ID = config["left_trigger_id"].asInt();
-    int RIGHT_TRIGGER_ID = config["right_trigger_id"].asInt();
-    float LEFT_JS_DEAD_ZONE = config["left_joystick_dead_zone"].asFloat();
-    float RIGHT_JS_DEAD_ZONE = config["right_joystick_dead_zone"].asFloat();
-    float RIGHT_TRIGGER_DEAD_ZONE = config["right_trigger_dead_zone"].asFloat();
-    float LEFT_TRIGGER_DEAD_ZONE = config["left_trigger_dead_zone"].asFloat();
-    float RIGHT_JS_SENSITIVITY = config["right_joystick_sensitivity"].asFloat();
+void run(std::unordered_map<int, int> &buttonState,
+         const bool &hasTriggers,
+         const Json::Value &config,
+         const int screenWidth,
+         const int screenHeight,
+         SDL_Joystick *joystick) {
+    const int LEFT_JS_X_ID = config["left_joystick_x_id"].asInt();
+    const int LEFT_JS_Y_ID = config["left_joystick_y_id"].asInt();
+    const int RIGHT_JS_X_ID = config["right_joystick_x_id"].asInt();
+    const int RIGHT_JS_Y_ID = config["right_joystick_y_id"].asInt();
+    const int LEFT_TRIGGER_ID = config["left_trigger_id"].asInt();
+    const int RIGHT_TRIGGER_ID = config["right_trigger_id"].asInt();
+    const float LEFT_JS_DEAD_ZONE = config["left_joystick_dead_zone"].asFloat();
+    const float RIGHT_JS_DEAD_ZONE = config["right_joystick_dead_zone"].asFloat();
+    const float RIGHT_TRIGGER_DEAD_ZONE = config["right_trigger_dead_zone"].asFloat();
+    const float LEFT_TRIGGER_DEAD_ZONE = config["left_trigger_dead_zone"].asFloat();
+    const float RIGHT_JS_SENSITIVITY = config["right_joystick_sensitivity"].asFloat();
     std::unordered_map<int, int> buttonMapping;
     for (const auto &configKey : config["button_mapping"].getMemberNames()) {
         int key = config["button_mapping"][configKey].asInt() - 1;
@@ -46,25 +45,25 @@ void run(
         return;
     }
     bool highPrecisionAlwaysOn = specificConfig["high_precision_on_by_default"].asBool();
-    float MAX_RADIUS_HIGH_PRECISION_OFF = specificConfig["default_radius"].asFloat();
+    const float MAX_RADIUS_HIGH_PRECISION_OFF = specificConfig["default_radius"].asFloat();
     float currentRadius = MAX_RADIUS_HIGH_PRECISION_OFF;
 
     Functions functions;
 
-    int center_x = screenWidth / 2;
-    int center_y = screenHeight / 2;
+    const int center_x = screenWidth / 2;
+    const int center_y = screenHeight / 2;
 
     auto left_card_pos = std::make_pair(720, center_y);
     auto right_card_pos = std::make_pair(1200, center_y);
     auto center_pos = std::make_pair(center_x, center_y);
     auto reroll_pos = std::make_pair(center_x, 825);
 
-    auto INPUT_TO_KEY_TAP = std::unordered_map<int, WORD>{
+    const auto INPUT_TO_KEY_TAP = std::unordered_map<int, WORD>{
         {START, VK_ESCAPE},
         {X, 'C'},
         {Y, 'O'}};
 
-    auto INPUT_TO_KEY_HOLD = std::unordered_map<int, WORD>{
+    const auto INPUT_TO_KEY_HOLD = std::unordered_map<int, WORD>{
         {LEFT_JS_LEFT, 'A'},
         {LEFT_JS_RIGHT, 'D'},
         {LEFT_JS_UP, 'W'},
@@ -72,25 +71,25 @@ void run(
         {B, VK_TAB},
         {R2, 'T'}};
 
-    auto INPUT_TO_MOUSE_MOVE = std::unordered_map<int, std::pair<int, int> *>{
+    const auto INPUT_TO_MOUSE_MOVE = std::unordered_map<int, std::pair<int, int> *>{
         {PAD_LEFT, &left_card_pos},
         {PAD_RIGHT, &right_card_pos},
         {PAD_UP, &center_pos},
         {PAD_DOWN, &reroll_pos},
         {R3, &center_pos}};
 
-    auto INPUT_TO_MOUSE_CLICK = std::unordered_map<int, int>{
+    const auto INPUT_TO_MOUSE_CLICK = std::unordered_map<int, int>{
         {A, SDL_BUTTON_LEFT}};
 
-    auto RELEASE_TO_KEY_TAP = std::unordered_map<int, WORD>{
+    const auto RELEASE_TO_KEY_TAP = std::unordered_map<int, WORD>{
         {R1, 'R'},
         {L1, 'E'}};
 
-    auto INPUT_TO_LOGIC_BEFORE = std::unordered_map<int, std::function<void()>>{
+    const auto INPUT_TO_LOGIC_BEFORE = std::unordered_map<int, std::function<void()>>{
         {R2, [&]() { functions.moveMouse(center_x, center_y); }},
         {R3, [&]() { highPrecisionAlwaysOn = !highPrecisionAlwaysOn; }}};
 
-    auto RELEASE_TO_LOGIC_AFTER = std::unordered_map<int, std::function<void()>>{
+    const auto RELEASE_TO_LOGIC_AFTER = std::unordered_map<int, std::function<void()>>{
         {R1, [&]() { currentRadius = MAX_RADIUS_HIGH_PRECISION_OFF;; }},
         {L1, [&]() { currentRadius = MAX_RADIUS_HIGH_PRECISION_OFF;; }}};
 
@@ -135,10 +134,10 @@ void run(
                 isLeftXActive = std::abs(leftX) > LEFT_JS_DEAD_ZONE;
                 isLeftYActive = std::abs(leftY) > LEFT_JS_DEAD_ZONE;
 
-                functions.handleState(&buttonState[LEFT_JS_LEFT], isLeftXActive && leftX < 0);
-                functions.handleState(&buttonState[LEFT_JS_RIGHT], isLeftXActive && leftX > 0);
-                functions.handleState(&buttonState[LEFT_JS_UP], isLeftYActive && leftY < 0);
-                functions.handleState(&buttonState[LEFT_JS_DOWN], isLeftYActive && leftY > 0);
+                functions.handleState(buttonState[LEFT_JS_LEFT], isLeftXActive && leftX < 0);
+                functions.handleState(buttonState[LEFT_JS_RIGHT], isLeftXActive && leftX > 0);
+                functions.handleState(buttonState[LEFT_JS_UP], isLeftYActive && leftY < 0);
+                functions.handleState(buttonState[LEFT_JS_DOWN], isLeftYActive && leftY > 0);
 
                 rightX = SDL_JoystickGetAxis(joystick, RIGHT_JS_X_ID) / 32768.0f;
                 rightY = SDL_JoystickGetAxis(joystick, RIGHT_JS_Y_ID) / 32768.0f;
@@ -153,15 +152,15 @@ void run(
                 for (const auto &event : events) {
                     if (event.type == SDL_JOYBUTTONDOWN) {
                         int button = buttonMapping[event.jbutton.button];
-                        functions.handleState(&buttonState[button], true);
+                        functions.handleState(buttonState[button], true);
                     } else if (event.type == SDL_JOYBUTTONUP) {
                         int button = buttonMapping[event.jbutton.button];
-                        functions.handleState(&buttonState[button], false);
+                        functions.handleState(buttonState[button], false);
                     } else if (event.type == SDL_JOYHATMOTION) {
-                        functions.handleState(&buttonState[PAD_LEFT], event.jhat.value == SDL_HAT_LEFT);
-                        functions.handleState(&buttonState[PAD_RIGHT], event.jhat.value == SDL_HAT_RIGHT);
-                        functions.handleState(&buttonState[PAD_DOWN], event.jhat.value == SDL_HAT_DOWN);
-                        functions.handleState(&buttonState[PAD_UP], event.jhat.value == SDL_HAT_UP);
+                        functions.handleState(buttonState[PAD_LEFT], event.jhat.value == SDL_HAT_LEFT);
+                        functions.handleState(buttonState[PAD_RIGHT], event.jhat.value == SDL_HAT_RIGHT);
+                        functions.handleState(buttonState[PAD_DOWN], event.jhat.value == SDL_HAT_DOWN);
+                        functions.handleState(buttonState[PAD_UP], event.jhat.value == SDL_HAT_UP);
                     }
                 }
 
@@ -171,7 +170,7 @@ void run(
                 }
                 if (hasTriggers) {
                     highPrecision = isLeftTriggerAxisActive;
-                    functions.handleState(&buttonState[R2], isRightTriggerAxisActive);
+                    functions.handleState(buttonState[R2], isRightTriggerAxisActive);
                 } else {
                     highPrecision = buttonState[L2] == PRESSED || buttonState[L2] == JUST_PRESSED;
                 }

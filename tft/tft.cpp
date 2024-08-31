@@ -28,10 +28,10 @@ const std::vector<std::vector<std::pair<int, int>>> CARD_COORDINATES = {
     {{553, 580}, {963, 580}, {1380, 583}},
     {{552, 865}, {959, 866}, {1365, 865}}};
 
-const float MAX_RADIUS = 0.45;
-float HORIZONTAL_RADIUS_OFFSET = 0.9; // the board is not proportional to the screen it sits on, this will help adapt to that
+constexpr float MAX_RADIUS = 0.45;
+constexpr float HORIZONTAL_RADIUS_OFFSET = 0.9; // the board is not proportional to the screen it sits on, this will help adapt to that
 
-const int BOARD_ADJACENCY_MATRIX[10][10] = {
+constexpr int BOARD_ADJACENCY_MATRIX[10][10] = {
     {NONE, UP, NONE, NONE, NONE, NONE, NONE, NONE, DOWN, NONE},  // 0
     {DOWN, NONE, UP, NONE, NONE, NONE, NONE, NONE, NONE, NONE},  // 1
     {NONE, DOWN, NONE, UP, NONE, NONE, NONE, NONE, NONE, NONE},  // 2
@@ -43,21 +43,25 @@ const int BOARD_ADJACENCY_MATRIX[10][10] = {
     {UP, NONE, NONE, NONE, NONE, DOWN, NONE, NONE, NONE, RIGHT}, // 8
     {UP, NONE, NONE, NONE, NONE, NONE, DOWN, NONE, LEFT, NONE}}; // 9
 
-void run(std::unordered_map<int, int> &buttonState, bool hasTriggers, Json::Value &config,
-         int screenWidth, int screenHeight, SDL_Joystick *joystick) {
-    int LEFT_JS_X_ID = config["left_joystick_x_id"].asInt();
-    int LEFT_JS_Y_ID = config["left_joystick_y_id"].asInt();
-    int RIGHT_JS_X_ID = config["right_joystick_x_id"].asInt();
-    int RIGHT_JS_Y_ID = config["right_joystick_y_id"].asInt();
-    int LEFT_TRIGGER_ID = config["left_trigger_id"].asInt();
-    int RIGHT_TRIGGER_ID = config["right_trigger_id"].asInt();
-    float LEFT_JS_DEAD_ZONE = config["left_joystick_dead_zone"].asFloat();
-    float RIGHT_JS_DEAD_ZONE = config["right_joystick_dead_zone"].asFloat();
-    float RIGHT_TRIGGER_DEAD_ZONE = config["right_trigger_dead_zone"].asFloat();
-    float LEFT_TRIGGER_DEAD_ZONE = config["left_trigger_dead_zone"].asFloat();
-    float RIGHT_JS_SENSITIVITY = config["right_joystick_sensitivity"].asFloat();
+void run(std::unordered_map<int, int> &buttonState,
+         const bool &hasTriggers,
+         const Json::Value &config,
+         const int screenWidth,
+         const int screenHeight,
+         SDL_Joystick *joystick) {
+    const int LEFT_JS_X_ID = config["left_joystick_x_id"].asInt();
+    const int LEFT_JS_Y_ID = config["left_joystick_y_id"].asInt();
+    const int RIGHT_JS_X_ID = config["right_joystick_x_id"].asInt();
+    const int RIGHT_JS_Y_ID = config["right_joystick_y_id"].asInt();
+    const int LEFT_TRIGGER_ID = config["left_trigger_id"].asInt();
+    const int RIGHT_TRIGGER_ID = config["right_trigger_id"].asInt();
+    const float LEFT_JS_DEAD_ZONE = config["left_joystick_dead_zone"].asFloat();
+    const float RIGHT_JS_DEAD_ZONE = config["right_joystick_dead_zone"].asFloat();
+    const float RIGHT_TRIGGER_DEAD_ZONE = config["right_trigger_dead_zone"].asFloat();
+    const float LEFT_TRIGGER_DEAD_ZONE = config["left_trigger_dead_zone"].asFloat();
+    const float RIGHT_JS_SENSITIVITY = config["right_joystick_sensitivity"].asFloat();
     std::unordered_map<int, int> buttonMapping;
-    for (std::string &configKey : config["button_mapping"].getMemberNames()) {
+    for (const std::string &configKey : config["button_mapping"].getMemberNames()) {
         int key = config["button_mapping"][configKey].asInt() - 1;
         buttonMapping[key] = BUTTON_NAME_TO_BUTTON_ID.at(configKey);
     }
@@ -65,20 +69,31 @@ void run(std::unordered_map<int, int> &buttonState, bool hasTriggers, Json::Valu
 
     Functions functions;
 
-    int center_x = screenWidth / 2;
-    int center_y = screenHeight / 2;
-    int vertical_adjustment = screenHeight / 10;
-    auto now = std::chrono::steady_clock::now();
-    State state = {2, 3, 0, 2, 0, 1, BOARD, {}, {{LEFT, now}, {RIGHT, now}, {UP, now}, {DOWN, now}}, {{LEFT, now}, {RIGHT, now}, {UP, now}, {DOWN, now}}, {{LEFT, false}, {RIGHT, false}, {UP, false}, {DOWN, false}}};
+    const int center_x = screenWidth / 2;
+    const int center_y = screenHeight / 2;
+    const int vertical_adjustment = screenHeight / 10;
+    const auto now = std::chrono::steady_clock::now();
 
-    auto TURBO_INPUTS = std::unordered_set<int>{PAD_LEFT, PAD_RIGHT, PAD_UP, PAD_DOWN};
+    State state = {
+        .boardRow = 2,
+        .boardColumn = 3,
+        .itemIndex = 0,
+        .shopIndex = 2,
+        .cardRow = 0,
+        .cardColumn = 1,
+        .mode = BOARD,
+        .mouse_target = {},
+        .pad_to_last_pressed = {{LEFT, now}, {RIGHT, now}, {UP, now}, {DOWN, now}},
+        .pad_to_last_executed = {{LEFT, now}, {RIGHT, now}, {UP, now}, {DOWN, now}},
+        .pad_to_is_unleashed = {{LEFT, false}, {RIGHT, false}, {UP, false}, {DOWN, false}}};
 
-    auto INPUT_TO_KEY_TAP = std::unordered_map<int, WORD>{{B, 'E'}, {X, 'F'}, {Y, 'D'}, {L3, 'W'}, {R2, 'R'}, {L2, 'Q'}};
+    const auto TURBO_INPUTS = std::unordered_set<int>{PAD_LEFT, PAD_RIGHT, PAD_UP, PAD_DOWN};
 
-    auto INPUT_TO_MOUSE_CLICK = std::unordered_map<int, int>{{START, SDL_BUTTON_LEFT}, {A, SDL_BUTTON_LEFT}, {SELECT, SDL_BUTTON_RIGHT}};
+    const auto INPUT_TO_KEY_TAP = std::unordered_map<int, WORD>{{B, 'E'}, {X, 'F'}, {Y, 'D'}, {L3, 'W'}, {R2, 'R'}, {L2, 'Q'}};
 
-    // TODO: think if I want to keep passing a reference or save this for static targets and just call move mouse for dynamic ones
-    auto INPUT_TO_MOUSE_MOVE = std::unordered_map<int, std::pair<int, int> *>{
+    const auto INPUT_TO_MOUSE_CLICK = std::unordered_map<int, int>{{START, SDL_BUTTON_LEFT}, {A, SDL_BUTTON_LEFT}, {SELECT, SDL_BUTTON_RIGHT}};
+
+    const auto INPUT_TO_MOUSE_MOVE = std::unordered_map<int, std::pair<int, int> *>{
         {PAD_LEFT, &state.mouse_target},
         {PAD_RIGHT, &state.mouse_target},
         {PAD_UP, &state.mouse_target},
@@ -87,14 +102,14 @@ void run(std::unordered_map<int, int> &buttonState, bool hasTriggers, Json::Valu
         {L1, &state.mouse_target},
         {R3, &state.mouse_target}};
 
-    auto RELEASE_TO_MOUSE_MOVE = std::unordered_map<int, std::pair<int, int> *>{
+    const auto RELEASE_TO_MOUSE_MOVE = std::unordered_map<int, std::pair<int, int> *>{
         {R1, &state.mouse_target},
         {L1, &state.mouse_target},
     };
 
-    auto INPUT_TO_LOGIC_BEFORE = std::unordered_map<int, std::function<void()>>{
+    const auto INPUT_TO_LOGIC_BEFORE = std::unordered_map<int, std::function<void()>>{
         {START, [&]() { functions.moveMouse(956, 993); }},
-        {PAD_LEFT, [&]() { updateAbstractState(LEFT, buttonState[PAD_LEFT], state); }},
+        {PAD_LEFT, [&]() { updateAbstractState(LEFT, buttonState.at(PAD_LEFT), state); }},
         {PAD_RIGHT, [&]() { updateAbstractState(RIGHT, buttonState[PAD_RIGHT], state); }},
         {PAD_UP, [&]() { updateAbstractState(UP, buttonState[PAD_UP], state); }},
         {PAD_DOWN, [&]() { updateAbstractState(DOWN, buttonState[PAD_DOWN], state); }}};
@@ -103,8 +118,7 @@ void run(std::unordered_map<int, int> &buttonState, bool hasTriggers, Json::Valu
 
     try {
         float leftX, leftY, rightX, rightY;
-        bool isLeftXActive, isLeftYActive, isRightXActive, isRightYActive, isLeftTriggerAxisActive,
-            isRightTriggerAxisActive;
+        bool isLeftXActive, isLeftYActive, isRightXActive, isRightYActive, isLeftTriggerAxisActive, isRightTriggerAxisActive;
 
         auto lastUpdateTime = std::chrono::steady_clock::now();
 
@@ -147,10 +161,10 @@ void run(std::unordered_map<int, int> &buttonState, bool hasTriggers, Json::Valu
                 isRightYActive = std::abs(rightY) > RIGHT_JS_DEAD_ZONE;
 
                 if (hasTriggers) {
-                    functions.handleState(&buttonState[R2],
+                    functions.handleState(buttonState[R2],
                                           (SDL_JoystickGetAxis(joystick, RIGHT_TRIGGER_ID) + 32768) / 65536.0f >
                                               RIGHT_TRIGGER_DEAD_ZONE);
-                    functions.handleState(&buttonState[L2],
+                    functions.handleState(buttonState[L2],
                                           (SDL_JoystickGetAxis(joystick, LEFT_TRIGGER_ID) + 32768) / 65536.0f >
                                               LEFT_TRIGGER_DEAD_ZONE);
                 }
@@ -158,15 +172,15 @@ void run(std::unordered_map<int, int> &buttonState, bool hasTriggers, Json::Valu
                 for (const auto &event : events) {
                     if (event.type == SDL_JOYBUTTONDOWN) {
                         int button = buttonMapping[event.jbutton.button];
-                        functions.handleState(&buttonState[button], true);
+                        functions.handleState(buttonState[button], true);
                     } else if (event.type == SDL_JOYBUTTONUP) {
                         int button = buttonMapping[event.jbutton.button];
-                        functions.handleState(&buttonState[button], false);
+                        functions.handleState(buttonState[button], false);
                     } else if (event.type == SDL_JOYHATMOTION) {
-                        functions.handleState(&buttonState[PAD_LEFT], event.jhat.value == SDL_HAT_LEFT);
-                        functions.handleState(&buttonState[PAD_RIGHT], event.jhat.value == SDL_HAT_RIGHT);
-                        functions.handleState(&buttonState[PAD_DOWN], event.jhat.value == SDL_HAT_DOWN);
-                        functions.handleState(&buttonState[PAD_UP], event.jhat.value == SDL_HAT_UP);
+                        functions.handleState(buttonState[PAD_LEFT], event.jhat.value == SDL_HAT_LEFT);
+                        functions.handleState(buttonState[PAD_RIGHT], event.jhat.value == SDL_HAT_RIGHT);
+                        functions.handleState(buttonState[PAD_DOWN], event.jhat.value == SDL_HAT_DOWN);
+                        functions.handleState(buttonState[PAD_UP], event.jhat.value == SDL_HAT_UP);
                     }
                 }
 
@@ -251,7 +265,7 @@ void run(std::unordered_map<int, int> &buttonState, bool hasTriggers, Json::Valu
     }
 }
 
-void updateAbstractState(const Direction direction, int buttonState, State &state) {
+void updateAbstractState(const int direction, const int &buttonState, State &state) {
     auto now = std::chrono::steady_clock::now();
     auto last_executed = state.pad_to_last_executed[direction];
     if (now - last_executed > std::chrono::milliseconds(50)) {

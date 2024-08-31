@@ -6,12 +6,11 @@
 #include <unordered_map>
 
 namespace swarm {
-void run(
-    std::unordered_map<int, int> &buttonState,
-    bool hasTriggers,
-    Json::Value &config,
-    int screenWidth,
-    int screenHeight,
+void run(std::unordered_map<int, int> &buttonState,
+    const bool &hasTriggers,
+    const Json::Value &config,
+    const int screenWidth,
+    const int screenHeight,
     SDL_Joystick *joystick);
 }
 

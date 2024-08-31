@@ -39,8 +39,8 @@ int main(int argc, char *argv[]) {
         SDL_Quit();
         return 1;
     }
-    int screenWidth = dm.w;
-    int screenHeight = dm.h;
+    const int screenWidth = dm.w;
+    const int screenHeight = dm.h;
 
     SDL_Joystick *joystick = nullptr;
     bool hasTriggers = false;
