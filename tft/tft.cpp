@@ -84,6 +84,8 @@ void run(std::unordered_map<int, int> &buttonState,
     const int center_x = screenWidth / 2;
     const int center_y = screenHeight / 2;
     const int vertical_adjustment = screenHeight / 10;
+    const float res_scaling_x = static_cast<float>(screenWidth) / 1920;
+    const float res_scaling_y = static_cast<float>(screenHeight) / 1080;
     const auto now = std::chrono::steady_clock::now();
 
     State state = {
@@ -122,11 +124,11 @@ void run(std::unordered_map<int, int> &buttonState,
     };
 
     const auto INPUT_TO_LOGIC_BEFORE = std::unordered_map<int, std::function<void()>>{
-        {START, [&]() { functions.moveMouse(956, 993); }},
-        {PAD_LEFT, [&]() { updateAbstractState(LEFT, buttonState.at(PAD_LEFT), state); }},
-        {PAD_RIGHT, [&]() { updateAbstractState(RIGHT, buttonState[PAD_RIGHT], state); }},
-        {PAD_UP, [&]() { updateAbstractState(UP, buttonState[PAD_UP], state); }},
-        {PAD_DOWN, [&]() { updateAbstractState(DOWN, buttonState[PAD_DOWN], state); }}};
+        {START, [&]() { functions.moveMouse(956 * res_scaling_x, 993 * res_scaling_y); }},
+        {PAD_LEFT, [&]() { updateAbstractState(LEFT, buttonState.at(PAD_LEFT), state, res_scaling_x, res_scaling_y); }},
+        {PAD_RIGHT, [&]() { updateAbstractState(RIGHT, buttonState[PAD_RIGHT], state, res_scaling_x, res_scaling_y); }},
+        {PAD_UP, [&]() { updateAbstractState(UP, buttonState[PAD_UP], state, res_scaling_x, res_scaling_y); }},
+        {PAD_DOWN, [&]() { updateAbstractState(DOWN, buttonState[PAD_DOWN], state, res_scaling_x, res_scaling_y); }}};
 
     functions.setMaps(&buttonState, &INPUT_TO_MOUSE_MOVE, &RELEASE_TO_MOUSE_MOVE, &INPUT_TO_MOUSE_CLICK, nullptr, nullptr, nullptr, &INPUT_TO_KEY_TAP, nullptr, nullptr, &INPUT_TO_LOGIC_BEFORE, nullptr, nullptr, nullptr);
 
@@ -204,46 +206,49 @@ void run(std::unordered_map<int, int> &buttonState,
                 }
                 if (buttonState[L1] == JUST_PRESSED) {
                     state.mode = ITEMS;
-                    state.mouse_target = ITEM_COORDINATES[state.itemIndex];
+                    auto coordinates = ITEM_COORDINATES[state.itemIndex];
+                    state.mouse_target = {coordinates.first * res_scaling_x, coordinates.second * res_scaling_y};
                 } else if (buttonState[L1] == JUST_RELEASED) {
                     state.mode = BOARD;
-                    state.mouse_target = BOARD_COORDINATES[state.boardRow][state.boardColumn];
-                }
-                if (buttonState[R1] == JUST_PRESSED) {
+                    auto coordinates = BOARD_COORDINATES[state.boardRow][state.boardColumn];
+                    state.mouse_target = {coordinates.first * res_scaling_x, coordinates.second * res_scaling_y};
+                } else if (buttonState[R1] == JUST_PRESSED) {
                     state.mode = SHOP;
-                    state.mouse_target = SHOP_COORDINATES[state.shopIndex];
+                    auto coordinates = SHOP_COORDINATES[state.shopIndex];
+                    state.mouse_target = {coordinates.first * res_scaling_x, coordinates.second * res_scaling_y};
                 } else if (buttonState[R1] == JUST_RELEASED) {
                     state.mode = BOARD;
-                    state.mouse_target = BOARD_COORDINATES[state.boardRow][state.boardColumn];
-                }
-                if (buttonState[R3] == JUST_PRESSED) {
+                    auto coordinates = BOARD_COORDINATES[state.boardRow][state.boardColumn];
+                    state.mouse_target = {coordinates.first * res_scaling_x, coordinates.second * res_scaling_y};
+                } else if (buttonState[R3] == JUST_PRESSED) {
                     if (state.mode == CARDS) {
                         state.mode = BOARD;
-                        state.mouse_target = BOARD_COORDINATES[state.boardRow][state.boardColumn];
+                        auto coordinates = BOARD_COORDINATES[state.boardRow][state.boardColumn];
+                        state.mouse_target = {coordinates.first * res_scaling_x, coordinates.second * res_scaling_y};
                     } else {
                         state.mode = CARDS;
                         state.cardRow = 0; // do not memorize previous location for cards (risky business)
                         state.cardColumn = 1;
-                        state.mouse_target = CARD_COORDINATES[state.cardRow][state.cardColumn];
+                        auto coordinates = CARD_COORDINATES[state.cardRow][state.cardColumn];
+                        state.mouse_target = {coordinates.first * res_scaling_x, coordinates.second * res_scaling_y};
                     }
-                }
-                if (buttonState[L3] == JUST_PRESSED) {
+                } else if (buttonState[L3] == JUST_PRESSED) {
                     if (state.mode == LOCK) {
                         state.mode = BOARD;
-                        state.mouse_target = BOARD_COORDINATES[state.boardRow][state.boardColumn];
+                        auto coordinates = BOARD_COORDINATES[state.boardRow][state.boardColumn];
+                        state.mouse_target = {coordinates.first * res_scaling_x, coordinates.second * res_scaling_y};
                     } else {
                         state.mode = LOCK;
                         state.lockIndex = 0; // do not memorize here either because why would you
-                        state.mouse_target = LOCK_COORDINATES[state.lockIndex];
+                        auto coordinates = LOCK_COORDINATES[state.lockIndex];
+                        state.mouse_target = {coordinates.first * res_scaling_x, coordinates.second * res_scaling_y};
                     }
                 }
 
-                // logic
-                if (buttonState[START] == JUST_PRESSED) {
-                    functions.moveMouse(956, 993);
-                }
-
                 // action
+                else if (buttonState[START] == JUST_PRESSED) {
+                    functions.moveMouse(956 * res_scaling_x, 993 * res_scaling_y);
+                }
                 for (const auto &[input, _] : INPUT_TO_KEY_TAP) {
                     functions.handleToKeyTap(input, JUST_PRESSED);
                 }
@@ -264,15 +269,14 @@ void run(std::unordered_map<int, int> &buttonState,
                     if (std::chrono::steady_clock::now() - lastUpdateTime > std::chrono::milliseconds(100)) {
                         state.mode = FREE;
                         functions.moveMouseRelative(
-                            round(rightX * RIGHT_JS_SENSITIVITY * 500),
-                            round(rightY * RIGHT_JS_SENSITIVITY * 500));
+                            round(rightX * RIGHT_JS_SENSITIVITY * 500 * res_scaling_x),
+                            round(rightY * RIGHT_JS_SENSITIVITY * 500 * res_scaling_y));
                         lastUpdateTime = std::chrono::steady_clock::now();
                     }
-                }
-                if (isLeftXActive || isLeftYActive) {
+                } else if (isLeftXActive || isLeftYActive) {
                     functions.moveMouse(
-                        round(leftX * center_x * MAX_RADIUS * HORIZONTAL_RADIUS_OFFSET + center_x),
-                        round((leftY * center_y * MAX_RADIUS + center_y) - vertical_adjustment));
+                        round(leftX * center_x * MAX_RADIUS * HORIZONTAL_RADIUS_OFFSET * res_scaling_x + center_x),
+                        round((leftY * center_y * MAX_RADIUS * res_scaling_y + center_y) - vertical_adjustment));
                     if (std::chrono::steady_clock::now() - lastUpdateTime > std::chrono::milliseconds(100)) {
                         functions.click(SDL_BUTTON_RIGHT);
                         lastUpdateTime = std::chrono::steady_clock::now();
@@ -291,7 +295,7 @@ void run(std::unordered_map<int, int> &buttonState,
     }
 }
 
-void updateAbstractState(const int direction, const int &buttonState, State &state) {
+void updateAbstractState(const int direction, const int &buttonState, State &state, const float res_scaling_x, const float res_scaling_y) {
     auto now = std::chrono::steady_clock::now();
     auto last_executed = state.pad_to_last_executed[direction];
     if (now - last_executed > std::chrono::milliseconds(50)) {
@@ -305,105 +309,68 @@ void updateAbstractState(const int direction, const int &buttonState, State &sta
             }
             if (state.mode == FREE) {
                 state.mode = BOARD;
+                return;
             }
-            switch (state.mode) {
-            case BOARD:
-                int row;
-                int column;
-                switch (direction) {
-                case UP:
-                    row = (state.boardRow + 1) % 5;
-                    column;
-                    if (row != 0) {
-                        column = state.boardColumn > 6 ? 6 : state.boardColumn;
-                    } else {
-                        column = state.boardColumn;
+            std::pair<int, int> coordinates;
+            if (state.mode == BOARD) {
+                if (direction == UP) {
+                    state.boardRow = (state.boardRow + 1) % 5;
+                    if (state.boardRow != 0) {
+                        state.boardColumn = state.boardColumn > 6 ? 6 : state.boardColumn;
                     }
-                    break;
-                case DOWN:
-                    row = (state.boardRow + 4) % 5;
-                    column;
-                    if (row != 0) {
-                        column = state.boardColumn > 6 ? 6 : state.boardColumn;
-                    } else {
-                        column = state.boardColumn;
+                } else if (direction == DOWN) {
+                    state.boardRow = (state.boardRow + 4) % 5;
+                    if (state.boardRow != 0) {
+                        state.boardColumn = state.boardColumn > 6 ? 6 : state.boardColumn;
                     }
-                    break;
-                case LEFT:
-                    row = state.boardRow;
-                    if (row != 0) {
-                        column = (state.boardColumn + 6) % 7;
+                } else if (direction == LEFT) {
+                    if (state.boardRow != 0) {
+                        state.boardColumn = (state.boardColumn + 6) % 7;
                     } else {
-                        column = (state.boardColumn + 8) % 9;
+                        state.boardColumn = (state.boardColumn + 8) % 9;
                     }
-                    break;
-                case RIGHT:
-                    row = state.boardRow;
-                    if (row != 0) {
-                        column = (state.boardColumn + 1) % 7;
+                } else if (direction == RIGHT) {
+                    if (state.boardRow != 0) {
+                        state.boardColumn = (state.boardColumn + 1) % 7;
                     } else {
-                        column = (state.boardColumn + 1) % 9;
+                        state.boardColumn = (state.boardColumn + 1) % 9;
                     }
-                    break;
                 }
-                state.boardRow = row;
-                state.boardColumn = column;
-                state.mouse_target = BOARD_COORDINATES[state.boardRow][state.boardColumn];
-                break;
-
-            case ITEMS:
+                coordinates = BOARD_COORDINATES[state.boardRow][state.boardColumn];
+            } else if (state.mode == ITEMS) {
                 for (int i = 0; i < 10; i++) {
                     if (BOARD_ADJACENCY_MATRIX[state.itemIndex][i] == direction) {
                         state.itemIndex = i;
                         break;
                     }
                 }
-                state.mouse_target = ITEM_COORDINATES[state.itemIndex];
-                break;
-
-            case SHOP:
-                switch (direction) {
-                case RIGHT:
-                    state.shopIndex = (state.shopIndex + 1) % 5;
-                    break;
-                case LEFT:
+                coordinates = ITEM_COORDINATES[state.itemIndex];
+            } else if (state.mode == SHOP) {
+                if (direction == LEFT) {
                     state.shopIndex = (state.shopIndex + 4) % 5;
-                    break;
-                default:
-                    break;
+                } else if (direction == RIGHT) {
+                    state.shopIndex = (state.shopIndex + 1) % 5;
                 }
-                state.mouse_target = SHOP_COORDINATES[state.shopIndex];
-                break;
-
-            case CARDS:
-                switch (direction) {
-                case UP:
-                case DOWN:
+                coordinates = SHOP_COORDINATES[state.shopIndex];
+            } else if (state.mode == CARDS) {
+                if (direction == UP || direction == DOWN) {
                     state.cardRow = (state.cardRow + 1) % 2;
-                    break;
-                case RIGHT:
+                } else if (direction == RIGHT) {
                     state.cardColumn = (state.cardColumn + 1) % 3;
-                    break;
-                case LEFT:
+                } else if (direction == LEFT) {
                     state.cardColumn = (state.cardColumn + 2) % 3;
-                    break;
                 }
-                state.mouse_target = CARD_COORDINATES[state.cardRow][state.cardColumn];
-                break;
-
-            case LOCK:
+                coordinates = CARD_COORDINATES[state.cardRow][state.cardColumn];
+            } else if (state.mode == LOCK) {
                 for (int i = 0; i < 7; i++) {
                     if (LOCK_ADJACENCY_MATRIX[state.lockIndex][i] == direction) {
                         state.lockIndex = i;
                         break;
                     }
                 }
-                state.mouse_target = LOCK_COORDINATES[state.lockIndex];
-                break;
-
-            default:
-                break;
+                coordinates = LOCK_COORDINATES[state.lockIndex];
             }
+            state.mouse_target = {coordinates.first * res_scaling_x, coordinates.second * res_scaling_y};
         }
     }
 }

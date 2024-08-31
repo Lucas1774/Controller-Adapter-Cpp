@@ -39,6 +39,3 @@ This game has custom config. See inside its folder.
     LEFT JOYSTICK (hold) -> move
     RIGHT JOYSTICK (hold) -> move mouse
     UP, DOWN, LEFT, RIGHT -> move the mouse to key spots depending on mode
-
-TODOS:
-- account for different resolutions
