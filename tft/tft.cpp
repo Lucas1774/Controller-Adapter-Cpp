@@ -28,6 +28,8 @@ const std::vector<std::vector<std::pair<int, int>>> CARD_COORDINATES = {
     {{553, 580}, {963, 580}, {1380, 583}},
     {{552, 865}, {959, 866}, {1365, 865}}};
 
+const std::vector<std::pair<int, int>> LOCK_COORDINATES = {{1450, 905}, {28, 350}, {33, 436}, {34, 528}, {356, 473}, {344, 538}, {349, 636}};
+
 constexpr float MAX_RADIUS = 0.45;
 constexpr float HORIZONTAL_RADIUS_OFFSET = 0.9; // the board is not proportional to the screen it sits on, this will help adapt to that
 
@@ -42,6 +44,16 @@ constexpr int BOARD_ADJACENCY_MATRIX[10][10] = {
     {NONE, NONE, NONE, NONE, DOWN, RIGHT, LEFT, NONE, NONE, UP}, // 7
     {UP, NONE, NONE, NONE, NONE, DOWN, NONE, NONE, NONE, RIGHT}, // 8
     {UP, NONE, NONE, NONE, NONE, NONE, DOWN, NONE, LEFT, NONE}}; // 9
+
+constexpr int LOCK_ADJACENCY_MATRIX[7][7] = {
+    {NONE, UP, RIGHT, LEFT, NONE, NONE, NONE}, // 0
+    {LEFT, NONE, DOWN, UP, RIGHT, NONE, NONE}, // 1
+    {LEFT, UP, NONE, DOWN, NONE, RIGHT, NONE}, // 2
+    {LEFT, DOWN, UP, NONE, NONE, NONE, RIGHT}, // 3
+    {RIGHT, LEFT, NONE, NONE, NONE, DOWN, UP}, // 4
+    {RIGHT, NONE, LEFT, NONE, UP, NONE, DOWN}, // 5
+    {RIGHT, NONE, NONE, LEFT, DOWN, UP, NONE}, // 6
+};
 
 void run(std::unordered_map<int, int> &buttonState,
          const bool &hasTriggers,
@@ -81,6 +93,7 @@ void run(std::unordered_map<int, int> &buttonState,
         .shopIndex = 2,
         .cardRow = 0,
         .cardColumn = 1,
+        .lockIndex = 0,
         .mode = BOARD,
         .mouse_target = {},
         .pad_to_last_pressed = {{LEFT, now}, {RIGHT, now}, {UP, now}, {DOWN, now}},
@@ -89,7 +102,7 @@ void run(std::unordered_map<int, int> &buttonState,
 
     const auto TURBO_INPUTS = std::unordered_set<int>{PAD_LEFT, PAD_RIGHT, PAD_UP, PAD_DOWN};
 
-    const auto INPUT_TO_KEY_TAP = std::unordered_map<int, WORD>{{B, 'E'}, {X, 'F'}, {Y, 'D'}, {L3, 'W'}, {R2, 'R'}, {L2, 'Q'}};
+    const auto INPUT_TO_KEY_TAP = std::unordered_map<int, WORD>{{B, 'E'}, {X, 'F'}, {Y, 'D'}, {R2, 'R'}, {L2, 'Q'}};
 
     const auto INPUT_TO_MOUSE_CLICK = std::unordered_map<int, int>{{START, SDL_BUTTON_LEFT}, {A, SDL_BUTTON_LEFT}, {SELECT, SDL_BUTTON_RIGHT}};
 
@@ -100,7 +113,8 @@ void run(std::unordered_map<int, int> &buttonState,
         {PAD_DOWN, &state.mouse_target},
         {R1, &state.mouse_target},
         {L1, &state.mouse_target},
-        {R3, &state.mouse_target}};
+        {R3, &state.mouse_target},
+        {L3, &state.mouse_target}};
 
     const auto RELEASE_TO_MOUSE_MOVE = std::unordered_map<int, std::pair<int, int> *>{
         {R1, &state.mouse_target},
@@ -213,6 +227,18 @@ void run(std::unordered_map<int, int> &buttonState,
                         state.mouse_target = CARD_COORDINATES[state.cardRow][state.cardColumn];
                     }
                 }
+                if (buttonState[L3] == JUST_PRESSED) {
+                    if (state.mode == LOCK) {
+                        state.mode = BOARD;
+                        state.mouse_target = BOARD_COORDINATES[state.boardRow][state.boardColumn];
+                    } else {
+                        state.mode = LOCK;
+                        state.lockIndex = 0; // do not memorize here either because why would you
+                        state.mouse_target = LOCK_COORDINATES[state.lockIndex];
+                    }
+                }
+
+                // logic
                 if (buttonState[START] == JUST_PRESSED) {
                     functions.moveMouse(956, 993);
                 }
@@ -363,6 +389,17 @@ void updateAbstractState(const int direction, const int &buttonState, State &sta
                     break;
                 }
                 state.mouse_target = CARD_COORDINATES[state.cardRow][state.cardColumn];
+                break;
+
+            case LOCK:
+                for (int i = 0; i < 7; i++) {
+                    if (LOCK_ADJACENCY_MATRIX[state.lockIndex][i] == direction) {
+                        state.lockIndex = i;
+                        break;
+                    }
+                }
+                state.mouse_target = LOCK_COORDINATES[state.lockIndex];
+                break;
 
             default:
                 break;

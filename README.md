@@ -34,7 +34,7 @@ This game has custom config. See inside its folder.
     R1 (hold) -> shop mode
     L2 -> R
     R2 -> Q
-    L3 -> W
+    L3 -> toggle lock + portal picking mode
     R3 -> toggle card selection mode
     LEFT JOYSTICK (hold) -> move
     RIGHT JOYSTICK (hold) -> move mouse

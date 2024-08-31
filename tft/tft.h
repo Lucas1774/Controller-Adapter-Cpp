@@ -20,6 +20,7 @@ enum MouseMovementWithPadMode {
     ITEMS,
     SHOP,
     CARDS,
+    LOCK,
     FREE,
 };
 struct State {
@@ -29,6 +30,7 @@ struct State {
     int shopIndex;
     int cardRow;
     int cardColumn;
+    int lockIndex;
     MouseMovementWithPadMode mode;
     std::pair<int, int> mouse_target;
     std::unordered_map<int, std::chrono::steady_clock::time_point> pad_to_last_pressed;
