@@ -23,7 +23,7 @@ const std::vector<std::pair<int, int>> ITEM_COORDINATES = {
     {295, 762}, {335, 728}, {309, 692}, {350, 667}, {409, 665}, {326, 637}, {384, 636}, {448, 635}, {347, 594}, {403, 594}};
 
 const std::vector<std::pair<int, int>> SHOP_COORDINATES = {
-    {574, 991}, {778, 989}, {980, 986}, {1182, 982}, {1370, 984}};
+    {503, 982}, {714, 982}, {923, 985}, {1151, 984}, {1348, 987}};
 
 const std::vector<std::vector<std::pair<int, int>>> CARD_COORDINATES = {
     {{553, 580}, {963, 580}, {1380, 583}},
