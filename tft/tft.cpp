@@ -225,12 +225,16 @@ void run(std::unordered_map<int, int> &buttonState,
                     state.mouse_target = {coordinates.first * res_scaling_x, coordinates.second * res_scaling_y};
                 } else if (buttonState[R1] == JUST_RELEASED) {
                     state.mode = BOARD;
-                    auto coordinates = BOARD_COORDINATES[state.boardRow][state.boardColumn];
+                    state.boardRow = 0;
+                    state.boardColumn = 0;
+                    auto coordinates = BOARD_COORDINATES[0][0];
                     state.mouse_target = {coordinates.first * res_scaling_x, coordinates.second * res_scaling_y};
                 } else if (buttonState[R3] == JUST_PRESSED) {
                     if (state.mode == CARDS) {
                         state.mode = BOARD;
-                        auto coordinates = BOARD_COORDINATES[state.boardRow][state.boardColumn];
+                        state.boardRow = 0;
+                        state.boardColumn = 0;
+                        auto coordinates = BOARD_COORDINATES[0][0];
                         state.mouse_target = {coordinates.first * res_scaling_x, coordinates.second * res_scaling_y};
                     } else {
                         state.mode = CARDS;
@@ -242,7 +246,9 @@ void run(std::unordered_map<int, int> &buttonState,
                 } else if (buttonState[L3] == JUST_PRESSED) {
                     if (state.mode == LOCK) {
                         state.mode = BOARD;
-                        auto coordinates = BOARD_COORDINATES[state.boardRow][state.boardColumn];
+                        state.boardRow = 0;
+                        state.boardColumn = 0;
+                        auto coordinates = BOARD_COORDINATES[0][0];
                         state.mouse_target = {coordinates.first * res_scaling_x, coordinates.second * res_scaling_y};
                     } else {
                         state.mode = LOCK;
@@ -274,7 +280,7 @@ void run(std::unordered_map<int, int> &buttonState,
 
                 if (isRightXActive || isRightYActive) {
                     if (std::chrono::steady_clock::now() - lastUpdateTime > std::chrono::milliseconds(100)) {
-                        state.mode = BOARD;
+                        state.mode = FREE;
                         functions.moveMouseRelative(
                             round(rightX * RIGHT_JS_SENSITIVITY * 500 * res_scaling_x),
                             round(rightY * RIGHT_JS_SENSITIVITY * 500 * res_scaling_y));
@@ -313,6 +319,14 @@ bool updateAbstractState(const int direction, const int &buttonState, State &sta
             state.pad_to_is_unleashed[direction] = buttonState == PRESSED;
             if (buttonState == JUST_PRESSED) {
                 state.pad_to_last_pressed[direction] = now;
+            }
+            if (state.mode == FREE) {
+                state.mode = BOARD;
+                state.boardRow = 0;
+                state.boardColumn = 0;
+                auto coordinates = BOARD_COORDINATES[0][0];
+                state.mouse_target = {coordinates.first * res_scaling_x, coordinates.second * res_scaling_y};
+                return true;
             }
             std::pair<int, int> coordinates;
             if (state.mode == BOARD) {

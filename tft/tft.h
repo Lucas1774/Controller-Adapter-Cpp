@@ -20,6 +20,7 @@ enum MouseMovementWithPadMode {
     SHOP,
     CARDS,
     LOCK,
+    FREE,
 };
 struct State {
     int boardRow;
