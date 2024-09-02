@@ -31,6 +31,7 @@ struct State {
     int cardColumn;
     int lockIndex;
     MouseMovementWithPadMode mode;
+    MouseMovementWithPadMode previous_mode;
     std::pair<int, int> mouse_target;
     std::unordered_map<int, std::chrono::steady_clock::time_point> pad_to_last_pressed;
     std::unordered_map<int, std::chrono::steady_clock::time_point> pad_to_last_executed;

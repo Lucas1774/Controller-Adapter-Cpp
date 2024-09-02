@@ -98,6 +98,7 @@ void run(std::unordered_map<int, int> &buttonState,
         .cardColumn = 1,
         .lockIndex = 0,
         .mode = BOARD,
+        .previous_mode = BOARD,
         .mouse_target = {},
         .pad_to_last_pressed = {{LEFT, now}, {RIGHT, now}, {UP, now}, {DOWN, now}},
         .pad_to_last_executed = {{LEFT, now}, {RIGHT, now}, {UP, now}, {DOWN, now}},
@@ -107,7 +108,7 @@ void run(std::unordered_map<int, int> &buttonState,
 
     const auto INPUT_TO_KEY_TAP = std::unordered_map<int, WORD>{{B, 'E'}, {X, 'F'}, {Y, 'D'}, {R2, 'R'}, {L2, 'Q'}};
 
-    const auto INPUT_TO_MOUSE_CLICK = std::unordered_map<int, int>{{START, SDL_BUTTON_LEFT}, {A, SDL_BUTTON_LEFT}, {SELECT, SDL_BUTTON_RIGHT}};
+    const auto INPUT_TO_MOUSE_CLICK = std::unordered_map<int, int>{{A, SDL_BUTTON_LEFT}, {SELECT, SDL_BUTTON_RIGHT}};
 
     const auto INPUT_TO_MOUSE_MOVE = std::unordered_map<int, std::pair<int, int> *>{
         {PAD_LEFT, &state.mouse_target},
@@ -126,7 +127,6 @@ void run(std::unordered_map<int, int> &buttonState,
     };
 
     const auto INPUT_TO_LOGIC_BEFORE = std::unordered_map<int, std::function<bool()>>{
-        {START, [&]() { functions.moveMouse(956 * res_scaling_x, 993 * res_scaling_y); return true; }},
         {PAD_LEFT, [&]() { return updateAbstractState(LEFT, buttonState.at(PAD_LEFT), state, res_scaling_x, res_scaling_y); }},
         {PAD_RIGHT, [&]() { return updateAbstractState(RIGHT, buttonState[PAD_RIGHT], state, res_scaling_x, res_scaling_y); }},
         {PAD_UP, [&]() { return updateAbstractState(UP, buttonState[PAD_UP], state, res_scaling_x, res_scaling_y); }},
@@ -206,12 +206,12 @@ void run(std::unordered_map<int, int> &buttonState,
                         functions.handleState(buttonState[PAD_UP], event.jhat.value == SDL_HAT_UP);
                     }
                 }
-
                 if (buttonState[ACTIVATE] == JUST_PRESSED) {
                     running = false;
                     continue;
-                }
-                if (buttonState[L1] == JUST_PRESSED) {
+                    // the code below is kind of horrible. It is what it is.
+                    // for item and board mode toggling, we remember positions to make it easier to build full items
+                } else if (buttonState[L1] == JUST_PRESSED) {
                     state.mode = ITEMS;
                     auto coordinates = ITEM_COORDINATES[state.itemIndex];
                     state.mouse_target = {coordinates.first * res_scaling_x, coordinates.second * res_scaling_y};
@@ -219,30 +219,44 @@ void run(std::unordered_map<int, int> &buttonState,
                     state.mode = BOARD;
                     auto coordinates = BOARD_COORDINATES[state.boardRow][state.boardColumn];
                     state.mouse_target = {coordinates.first * res_scaling_x, coordinates.second * res_scaling_y};
+                    // for shop and board mode toggling, we always go to bench and to middle card, that is also the "show own board" button location
+                    // we don't necessarily go back to board mode. If card mode was set as "previous", we go there.
+                    // the idea is to easily show the board when going to pick a card, without leaving card selecting mode
                 } else if (buttonState[R1] == JUST_PRESSED) {
                     state.mode = SHOP;
+                    state.shopIndex = 2;
                     auto coordinates = SHOP_COORDINATES[state.shopIndex];
                     state.mouse_target = {coordinates.first * res_scaling_x, coordinates.second * res_scaling_y};
                 } else if (buttonState[R1] == JUST_RELEASED) {
-                    state.mode = BOARD;
-                    state.boardRow = 0;
-                    state.boardColumn = 0;
-                    auto coordinates = BOARD_COORDINATES[0][0];
-                    state.mouse_target = {coordinates.first * res_scaling_x, coordinates.second * res_scaling_y};
+                    state.mode = state.previous_mode;
+                    if (state.mode == BOARD) {
+                        state.boardRow = 0;
+                        state.boardColumn = 0;
+                        auto coordinates = BOARD_COORDINATES[0][0];
+                        state.mouse_target = {coordinates.first * res_scaling_x, coordinates.second * res_scaling_y};
+                    } else if (state.mode == CARDS) {
+                        auto coordinates = CARD_COORDINATES[state.cardRow][state.cardColumn];
+                        state.mouse_target = {coordinates.first * res_scaling_x, coordinates.second * res_scaling_y};
+                    }
+                    // for card and board mode toggling, we also go to the bench when going to board mode, and to the middle when going to card mode, because why not
+                    // we save the state in previous state in case we want to go to item state after.
                 } else if (buttonState[R3] == JUST_PRESSED) {
                     if (state.mode == CARDS) {
                         state.mode = BOARD;
+                        state.previous_mode = BOARD;
                         state.boardRow = 0;
                         state.boardColumn = 0;
                         auto coordinates = BOARD_COORDINATES[0][0];
                         state.mouse_target = {coordinates.first * res_scaling_x, coordinates.second * res_scaling_y};
                     } else {
                         state.mode = CARDS;
-                        state.cardRow = 0; // do not memorize previous location for cards (risky business)
+                        state.previous_mode = CARDS;
+                        state.cardRow = 0;
                         state.cardColumn = 1;
                         auto coordinates = CARD_COORDINATES[state.cardRow][state.cardColumn];
                         state.mouse_target = {coordinates.first * res_scaling_x, coordinates.second * res_scaling_y};
                     }
+                    // for lock and board mode toggling, also to bench for convenience, and also always to lock
                 } else if (buttonState[L3] == JUST_PRESSED) {
                     if (state.mode == LOCK) {
                         state.mode = BOARD;
@@ -252,16 +266,13 @@ void run(std::unordered_map<int, int> &buttonState,
                         state.mouse_target = {coordinates.first * res_scaling_x, coordinates.second * res_scaling_y};
                     } else {
                         state.mode = LOCK;
-                        state.lockIndex = 0; // do not memorize here either because why would you
+                        state.lockIndex = 0;
                         auto coordinates = LOCK_COORDINATES[state.lockIndex];
                         state.mouse_target = {coordinates.first * res_scaling_x, coordinates.second * res_scaling_y};
                     }
                 }
 
                 // action
-                else if (buttonState[START] == JUST_PRESSED) {
-                    functions.moveMouse(956 * res_scaling_x, 993 * res_scaling_y);
-                }
                 for (const auto &[input, _] : INPUT_TO_KEY_TAP) {
                     functions.handleToKeyTap(input, JUST_PRESSED);
                 }
