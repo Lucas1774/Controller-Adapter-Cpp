@@ -31,9 +31,6 @@ const std::vector<std::vector<std::pair<int, int>>> CARD_COORDINATES = {
 
 const std::vector<std::pair<int, int>> LOCK_COORDINATES = {{1450, 905}, {28, 350}, {33, 436}, {34, 528}, {356, 473}, {344, 538}, {349, 636}};
 
-constexpr float MAX_RADIUS = 0.45;
-constexpr float HORIZONTAL_RADIUS_OFFSET = 1.1; // the board is not proportional to the screen it sits on, this will help adapt to that
-
 constexpr int BOARD_ADJACENCY_MATRIX[10][10] = {
     {NONE, UP, NONE, NONE, NONE, NONE, NONE, NONE, DOWN, NONE},  // 0
     {DOWN, NONE, UP, NONE, NONE, NONE, NONE, NONE, NONE, NONE},  // 1
@@ -84,7 +81,6 @@ void run(std::unordered_map<int, int> &buttonState,
 
     const int center_x = screenWidth / 2;
     const int center_y = screenHeight / 2;
-    const int vertical_adjustment = screenHeight / 10;
     const float res_scaling_x = static_cast<float>(screenWidth) / 1920;
     const float res_scaling_y = static_cast<float>(screenHeight) / 1080;
     const auto now = std::chrono::steady_clock::now();
@@ -298,12 +294,11 @@ void run(std::unordered_map<int, int> &buttonState,
                         lastUpdateTime = std::chrono::steady_clock::now();
                     }
                 } else if (isLeftXActive || isLeftYActive) {
-                    if (updateAbstractState(buttonState, state, res_scaling_x, res_scaling_y)) {
-                        functions.moveMouse(state.mouse_target.first, state.mouse_target.second);
-                        if (std::chrono::steady_clock::now() - lastUpdateTime > std::chrono::milliseconds(100)) {
-                            functions.click(SDL_BUTTON_RIGHT);
-                            lastUpdateTime = std::chrono::steady_clock::now();
-                        }
+                    updateAbstractState(buttonState, state, res_scaling_x, res_scaling_y);
+                    functions.moveMouse(state.mouse_target.first, state.mouse_target.second);
+                    if (std::chrono::steady_clock::now() - lastUpdateTime > std::chrono::milliseconds(100)) {
+                        functions.click(SDL_BUTTON_RIGHT);
+                        lastUpdateTime = std::chrono::steady_clock::now();
                     }
                 }
             }
@@ -406,7 +401,7 @@ bool updateAbstractState(const int direction, const int &buttonState, State &sta
     return false;
 }
 
-bool updateAbstractState(const std::unordered_map<int, int> &buttonState, State &state, const float res_scaling_x, const float res_scaling_y) {
+void updateAbstractState(const std::unordered_map<int, int> &buttonState, State &state, const float res_scaling_x, const float res_scaling_y) {
     static const int LEFT_MASK = 1;
     static const int RIGHT_MASK = 2;
     static const int UP_MASK = 4;
@@ -428,14 +423,7 @@ bool updateAbstractState(const std::unordered_map<int, int> &buttonState, State 
     bool down = PRESSED_STATES.find(buttonState.at(LEFT_JS_DOWN)) != PRESSED_STATES.end();
 
     int bitmask = (left * LEFT_MASK) | (right * RIGHT_MASK) | (up * UP_MASK) | (down * DOWN_MASK);
-
-    auto entry = DIRECTION_TO_MOVE_INDEX.find(bitmask);
-    if (DIRECTION_TO_MOVE_INDEX.find(bitmask) != DIRECTION_TO_MOVE_INDEX.end()) {
-        auto coordinates = MOVE_COORDINATES[entry->second];
-        state.mouse_target = {coordinates.first * res_scaling_x, coordinates.second * res_scaling_y};
-        return true;
-    } else {
-        return false;
-    }
+    auto coordinates = MOVE_COORDINATES[DIRECTION_TO_MOVE_INDEX.find(bitmask)->second];
+    state.mouse_target = {coordinates.first * res_scaling_x, coordinates.second * res_scaling_y};
 }
 } // namespace tft

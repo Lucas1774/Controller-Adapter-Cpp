@@ -38,7 +38,7 @@ struct State {
     std::unordered_map<int, bool> pad_to_is_unleashed;
 };
 bool updateAbstractState(const int direction, const int &buttonState, State &state, const float res_scaling_x, const float res_scaling_y);
-bool updateAbstractState(const std::unordered_map<int, int> &buttonState, State &state, const float res_scaling_x, const float res_scaling_y);
+void updateAbstractState(const std::unordered_map<int, int> &buttonState, State &state, const float res_scaling_x, const float res_scaling_y);
 } // namespace tft
 
 #endif // TFT_H
