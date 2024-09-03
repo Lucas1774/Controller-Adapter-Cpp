@@ -127,7 +127,7 @@ void run(std::unordered_map<int, int> &buttonState,
     };
 
     const auto INPUT_TO_LOGIC_BEFORE = std::unordered_map<int, std::function<bool()>>{
-        {PAD_LEFT, [&]() { return updateAbstractState(LEFT, buttonState.at(PAD_LEFT), state, res_scaling_x, res_scaling_y); }},
+        {PAD_LEFT, [&]() { return updateAbstractState(LEFT, buttonState[PAD_LEFT], state, res_scaling_x, res_scaling_y); }},
         {PAD_RIGHT, [&]() { return updateAbstractState(RIGHT, buttonState[PAD_RIGHT], state, res_scaling_x, res_scaling_y); }},
         {PAD_UP, [&]() { return updateAbstractState(UP, buttonState[PAD_UP], state, res_scaling_x, res_scaling_y); }},
         {PAD_DOWN, [&]() { return updateAbstractState(DOWN, buttonState[PAD_DOWN], state, res_scaling_x, res_scaling_y); }}};
