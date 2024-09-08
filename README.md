@@ -24,7 +24,7 @@ This game has custom config. See inside its folder.
 
 ## Tft
 
-    START -> Make a suggestion, it is currently unused
+    START -> W
     SELECT -> RIGHT CLICK
     A -> LEFT CLICK
     X -> F
