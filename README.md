@@ -39,3 +39,13 @@ This game has custom config. See inside its folder.
     LEFT JOYSTICK (hold) -> move
     RIGHT JOYSTICK (hold) -> move mouse
     UP, DOWN, LEFT, RIGHT -> move the mouse to key spots depending on mode
+
+## Chess
+
+    A -> LEFT CLICK (down to press, up to release)
+    X -> offer draw (to be confirmed)
+    Y -> resign (to be confirmed)
+    B -> RIGHT CLICK
+    L1 -> offer rematch
+    R1 -> search new game
+    UP, DOWN, LEFT, RIGHT -> move the mouse through the board or between "yes" and "no" depending on mode

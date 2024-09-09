@@ -3,14 +3,13 @@
 #include "constants.h"
 #include "swarm.h"
 #include "tft.h"
+#include "chess.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_main.h>
 #include <fstream>
 #include <iostream>
 #include <unordered_map>
 #include <windows.h>
-
-using namespace swarm;
 
 int main(int argc, char *argv[]) {
     if (argc < 2) {
@@ -61,6 +60,8 @@ int main(int argc, char *argv[]) {
         swarm::run(buttonState, hasTriggers, config, screenWidth, screenHeight, joystick);
     } else if (game == "tft") {
         tft::run(buttonState, hasTriggers, config, screenWidth, screenHeight, joystick);
+    } else if (game == "chess") {
+        chess::run(buttonState, hasTriggers, config, screenWidth, screenHeight, joystick);
     } else {
         std::cerr << "Invalid game" << std::endl;
     }

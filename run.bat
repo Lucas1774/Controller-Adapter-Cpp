@@ -1,2 +1,2 @@
-.\mapper.exe tft
+.\mapper.exe chess
 PAUSE
