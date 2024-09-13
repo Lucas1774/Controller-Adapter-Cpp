@@ -195,21 +195,17 @@ void Functions::handleState(int &state, bool is_pressed) const {
     }
 }
 
-bool Functions::isBufferFree(const int second_input_delay_mills,
-                             const int subsequent_inputs_delay_millis, const int &buttonState,
-                             std::chrono::steady_clock::time_point &last_pressed,
-                             std::chrono::steady_clock::time_point &last_executed,
-                             bool &is_unleashed) const {
+bool Functions::isBufferFree(const int second_input_delay_mills, const int subsequent_inputs_delay_millis, const int &buttonState, BufferState &bufferState) const {
     auto now = std::chrono::steady_clock::now();
-    if (now - last_executed <= std::chrono::milliseconds(subsequent_inputs_delay_millis)) {
+    if (now - bufferState.last_executed <= std::chrono::milliseconds(subsequent_inputs_delay_millis)) {
         return false;
-    } else if (!is_unleashed && now - last_pressed <= std::chrono::milliseconds(second_input_delay_mills)) {
+    } else if (!bufferState.is_unleashed && now - bufferState.last_pressed <= std::chrono::milliseconds(second_input_delay_mills)) {
         return false;
     } else {
-        last_executed = now;
-        is_unleashed = (buttonState == PRESSED);
+        bufferState.last_executed = now;
+        bufferState.is_unleashed = (buttonState == PRESSED);
         if (buttonState == JUST_PRESSED) {
-            last_pressed = now;
+            bufferState.last_pressed = now;
         }
         return true;
     }

@@ -26,11 +26,8 @@ struct State {
     int drawIndex;
     Mode mode;
     std::pair<int, int> mouse_target;
-    std::unordered_map<int, std::chrono::steady_clock::time_point> pad_to_last_pressed;
-    std::unordered_map<int, std::chrono::steady_clock::time_point> pad_to_last_executed;
-    std::unordered_map<int, bool> pad_to_is_unleashed;
 };
-bool updateAbstractState(const int button, const int &buttonState, State &state, const float res_scaling_x, const float res_scaling_y, const Functions &functions);
+bool updateAbstractState(const int button, const int &buttonState, State &state, BufferState &BufferState, float res_scaling_x, const float res_scaling_y, const Functions &functions);
 } // namespace chess
 
 #endif // CHESS_H

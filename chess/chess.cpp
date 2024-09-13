@@ -39,7 +39,6 @@ void run(std::unordered_map<int, int> &buttonState,
     bool running = config["run_automatically"].asBool();
 
     Functions functions;
-
     const auto PLAY_AGAIN_POS = std::make_pair(1255, 539);
     const auto REMATCH_POS = std::make_pair(1431, 536);
     const auto RESIGN_POS = std::make_pair(1177, 570);
@@ -57,35 +56,31 @@ void run(std::unordered_map<int, int> &buttonState,
         .drawIndex = 0,
         .mode = BOARD,
         .mouse_target = {},
-        .pad_to_last_pressed = {{PAD_LEFT, now}, {PAD_RIGHT, now}, {PAD_UP, now}, {PAD_DOWN, now}},
-        .pad_to_last_executed = {{PAD_LEFT, now}, {PAD_RIGHT, now}, {PAD_UP, now}, {PAD_DOWN, now}},
-        .pad_to_is_unleashed = {{PAD_LEFT, false}, {PAD_RIGHT, false}, {PAD_UP, false}, {PAD_DOWN, false}}};
+    };
+    BufferState bufferState = {
+        .last_pressed = now,
+        .last_executed = now,
+        .is_unleashed = false,
+    };
 
     const auto INPUT_TO_MOUSE_MOVE = std::unordered_map<int, std::pair<int, int> *>{
         {PAD_LEFT, &state.mouse_target},
         {PAD_RIGHT, &state.mouse_target},
         {PAD_UP, &state.mouse_target},
         {PAD_DOWN, &state.mouse_target}};
-
-    const auto INPUT_TO_BUTTON_CLICK = std::unordered_map<int, int>{
-        {B, SDL_BUTTON_RIGHT}, {R1, SDL_BUTTON_LEFT}, {L1, SDL_BUTTON_LEFT}, {Y, SDL_BUTTON_LEFT}, {X, SDL_BUTTON_LEFT}};
-
-    const auto INPUT_TO_BUTTON_TOGGLE = std::unordered_map<int, int>{
-        {A, SDL_BUTTON_LEFT}};
-
-    const auto RELEASE_TO_BUTTON_TOGGLE = std::unordered_map<int, int>{
-        {A, SDL_BUTTON_LEFT}};
-
+    const auto INPUT_TO_BUTTON_CLICK = std::unordered_map<int, int>{{B, SDL_BUTTON_RIGHT}, {R1, SDL_BUTTON_LEFT}, {L1, SDL_BUTTON_LEFT}, {Y, SDL_BUTTON_LEFT}, {X, SDL_BUTTON_LEFT}};
+    const auto INPUT_TO_BUTTON_TOGGLE = std::unordered_map<int, int>{{A, SDL_BUTTON_LEFT}};
+    const auto RELEASE_TO_BUTTON_TOGGLE = std::unordered_map<int, int>{{A, SDL_BUTTON_LEFT}};
     const auto INPUT_TO_LOGIC_BEFORE = std::unordered_map<int, std::function<bool()>>{
         {L1, [&]() { functions.moveMouse(REMATCH_POS.first * res_scaling_x, REMATCH_POS.second * res_scaling_y); return true; }},
         {R1, [&]() { functions.moveMouse(PLAY_AGAIN_POS.first * res_scaling_x, PLAY_AGAIN_POS.second * res_scaling_y); return true; }},
         {X, [&]() { functions.moveMouse(DRAW_POS.first * res_scaling_x, DRAW_POS.second * res_scaling_y); return true; }},
         {Y, [&]() { functions.moveMouse(RESIGN_POS.first * res_scaling_x, RESIGN_POS.second * res_scaling_y); return true; }},
-        {PAD_LEFT, [&]() { return updateAbstractState(PAD_LEFT, buttonState[PAD_LEFT], state, res_scaling_x, res_scaling_y, functions); }},
-        {PAD_RIGHT, [&]() { return updateAbstractState(PAD_RIGHT, buttonState[PAD_RIGHT], state, res_scaling_x, res_scaling_y, functions); }},
-        {PAD_UP, [&]() { return updateAbstractState(PAD_UP, buttonState[PAD_UP], state, res_scaling_x, res_scaling_y, functions); }},
-        {PAD_DOWN, [&]() { return updateAbstractState(PAD_DOWN, buttonState[PAD_DOWN], state, res_scaling_x, res_scaling_y, functions); }}};
-
+        {PAD_LEFT, [&]() { return updateAbstractState(PAD_LEFT, buttonState[PAD_LEFT], state, bufferState, res_scaling_x, res_scaling_y, functions); }},
+        {PAD_RIGHT, [&]() { return updateAbstractState(PAD_RIGHT, buttonState[PAD_RIGHT], state, bufferState, res_scaling_x, res_scaling_y, functions); }},
+        {PAD_UP, [&]() { return updateAbstractState(PAD_UP, buttonState[PAD_UP], state, bufferState, res_scaling_x, res_scaling_y, functions); }},
+        {PAD_DOWN, [&]() { return updateAbstractState(PAD_DOWN, buttonState[PAD_DOWN], state, bufferState, res_scaling_x, res_scaling_y, functions); }},
+    };
     const auto INPUT_TO_LOGIC_AFTER = std::unordered_map<int, std::function<bool()>>{
         {L1, [&]() { auto c = BOARD_COORDINATES[state.boardRow][state.boardColumn]; functions.moveMouse(c.first * res_scaling_x, c.second * res_scaling_y); return true; }},
         {R1, [&]() { auto c = BOARD_COORDINATES[state.boardRow][state.boardColumn]; functions.moveMouse(c.first * res_scaling_x, c.second * res_scaling_y); return true; }},
@@ -171,8 +166,8 @@ void run(std::unordered_map<int, int> &buttonState,
     }
 }
 
-bool updateAbstractState(const int button, const int &buttonState, State &state, const float res_scaling_x, const float res_scaling_y, const Functions &functions) {
-    if (!functions.isBufferFree(200, 50, buttonState, state.pad_to_last_pressed[button], state.pad_to_last_executed[button], state.pad_to_is_unleashed[button])) {
+bool updateAbstractState(const int button, const int &buttonState, State &state, BufferState &bufferState, const float res_scaling_x, const float res_scaling_y, const Functions &functions) {
+    if (!functions.isBufferFree(200, 50, buttonState, bufferState)) {
         return false;
     }
 

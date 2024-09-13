@@ -34,11 +34,8 @@ struct State {
     MouseMovementWithPadMode mode;
     MouseMovementWithPadMode previous_mode;
     std::pair<int, int> mouse_target;
-    std::unordered_map<int, std::chrono::steady_clock::time_point> pad_to_last_pressed;
-    std::unordered_map<int, std::chrono::steady_clock::time_point> pad_to_last_executed;
-    std::unordered_map<int, bool> pad_to_is_unleashed;
 };
-bool updateAbstractState(const int button, const int &buttonState, State &state, const float res_scaling_x, const float res_scaling_y, const Functions &functions);
+bool updateAbstractState(const int button, const int &buttonState, State &state, BufferState &bufferState, const float res_scaling_x, const float res_scaling_y, const Functions &functions);
 void updateAbstractState(const std::unordered_map<int, int> &buttonState, State &state, const float res_scaling_x, const float res_scaling_y);
 } // namespace tft
 

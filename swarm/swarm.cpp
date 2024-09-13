@@ -49,7 +49,6 @@ void run(std::unordered_map<int, int> &buttonState,
     float currentRadius = MAX_RADIUS_HIGH_PRECISION_OFF;
 
     Functions functions;
-
     const int center_x = screenWidth / 2;
     const int center_y = screenHeight / 2;
 
@@ -58,40 +57,32 @@ void run(std::unordered_map<int, int> &buttonState,
     auto center_pos = std::make_pair(center_x, center_y);
     auto reroll_pos = std::make_pair(center_x, 825);
 
-    const auto INPUT_TO_KEY_TAP = std::unordered_map<int, WORD>{
-        {START, VK_ESCAPE},
-        {X, 'C'},
-        {Y, 'O'}};
-
+    const auto INPUT_TO_KEY_TAP = std::unordered_map<int, WORD>{{START, VK_ESCAPE}, {X, 'C'}, {Y, 'O'}};
     const auto INPUT_TO_KEY_HOLD = std::unordered_map<int, WORD>{
         {LEFT_JS_LEFT, 'A'},
         {LEFT_JS_RIGHT, 'D'},
         {LEFT_JS_UP, 'W'},
         {LEFT_JS_DOWN, 'S'},
         {B, VK_TAB},
-        {R2, 'T'}};
-
+        {R2, 'T'},
+    };
     const auto INPUT_TO_MOUSE_MOVE = std::unordered_map<int, std::pair<int, int> *>{
         {PAD_LEFT, &left_card_pos},
         {PAD_RIGHT, &right_card_pos},
         {PAD_UP, &center_pos},
         {PAD_DOWN, &reroll_pos},
-        {R3, &center_pos}};
-
-    const auto INPUT_TO_MOUSE_CLICK = std::unordered_map<int, int>{
-        {A, SDL_BUTTON_LEFT}};
-
-    const auto RELEASE_TO_KEY_TAP = std::unordered_map<int, WORD>{
-        {R1, 'R'},
-        {L1, 'E'}};
-
+        {R3, &center_pos},
+    };
+    const auto INPUT_TO_MOUSE_CLICK = std::unordered_map<int, int>{{A, SDL_BUTTON_LEFT}};
+    const auto RELEASE_TO_KEY_TAP = std::unordered_map<int, WORD>{{R1, 'R'}, {L1, 'E'}};
     const auto INPUT_TO_LOGIC_BEFORE = std::unordered_map<int, std::function<bool()>>{
-        {R2, [&]() { functions.moveMouse(center_x, center_y); return true;}},
-        {R3, [&]() { highPrecisionAlwaysOn = !highPrecisionAlwaysOn; return true;}}};
-
+        {R2, [&]() { functions.moveMouse(center_x, center_y); return true; }},
+        {R3, [&]() { highPrecisionAlwaysOn = !highPrecisionAlwaysOn; return true; }},
+    };
     const auto RELEASE_TO_LOGIC_AFTER = std::unordered_map<int, std::function<bool()>>{
-        {R1, [&]() { currentRadius = MAX_RADIUS_HIGH_PRECISION_OFF; return true;}},
-        {L1, [&]() { currentRadius = MAX_RADIUS_HIGH_PRECISION_OFF; return true;}}};
+        {R1, [&]() { currentRadius = MAX_RADIUS_HIGH_PRECISION_OFF; return true; }},
+        {L1, [&]() { currentRadius = MAX_RADIUS_HIGH_PRECISION_OFF; return true; }},
+    };
 
     functions.setMaps(&buttonState, &INPUT_TO_MOUSE_MOVE, nullptr, &INPUT_TO_MOUSE_CLICK, nullptr, nullptr, nullptr, &INPUT_TO_KEY_TAP, &RELEASE_TO_KEY_TAP, &INPUT_TO_KEY_HOLD, &INPUT_TO_LOGIC_BEFORE, nullptr, nullptr, &RELEASE_TO_LOGIC_AFTER);
 

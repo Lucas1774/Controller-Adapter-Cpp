@@ -1,5 +1,6 @@
 #pragma once
 
+#include <chrono>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -66,6 +67,12 @@ enum ButtonState {
     JUST_PRESSED,
     JUST_RELEASED,
     RELEASED,
+};
+
+struct BufferState {
+    std::chrono::steady_clock::time_point last_pressed;
+    std::chrono::steady_clock::time_point last_executed;
+    bool is_unleashed;
 };
 
 const std::unordered_set<int> PRESSED_STATES = {PRESSED, JUST_PRESSED};

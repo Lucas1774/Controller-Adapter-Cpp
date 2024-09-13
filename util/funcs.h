@@ -38,11 +38,7 @@ class Functions {
     void handleToKeyHold(const int &input) const;
     void handleToKeyHold(const int &input, const int key) const;
     void handleState(int &state, const bool is_pressed) const;
-    bool isBufferFree(const int second_input_delay_mills,
-                      const int subsequent_inputs_delay_millis, const int &buttonState,
-                      std::chrono::steady_clock::time_point &last_pressed,
-                      std::chrono::steady_clock::time_point &last_executed,
-                      bool &is_unleashed) const;
+    bool isBufferFree(const int second_input_delay_mills, const int subsequent_inputs_delay_millis, const int &buttonState, BufferState &BufferState) const;
 
   private:
     const std::unordered_map<int, DWORD> BUTTON_ID_TO_PRESS_EVENT = {

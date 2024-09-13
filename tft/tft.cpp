@@ -77,7 +77,6 @@ void run(std::unordered_map<int, int> &buttonState,
     bool running = config["run_automatically"].asBool();
 
     Functions functions;
-
     const int center_x = screenWidth / 2;
     const int center_y = screenHeight / 2;
     const float res_scaling_x = static_cast<float>(screenWidth) / 1920;
@@ -95,16 +94,15 @@ void run(std::unordered_map<int, int> &buttonState,
         .mode = BOARD,
         .previous_mode = BOARD,
         .mouse_target = {},
-        .pad_to_last_pressed = {{PAD_LEFT, now}, {PAD_RIGHT, now}, {PAD_UP, now}, {PAD_DOWN, now}},
-        .pad_to_last_executed = {{PAD_LEFT, now}, {PAD_RIGHT, now}, {PAD_UP, now}, {PAD_DOWN, now}},
-        .pad_to_is_unleashed = {{PAD_LEFT, false}, {PAD_RIGHT, false}, {PAD_UP, false}, {PAD_DOWN, false}}};
+    };
+    BufferState buffer_state = {
+        .last_pressed = now,
+        .last_executed = now,
+        .is_unleashed = false};
 
     const auto TURBO_INPUTS = std::unordered_set<int>{PAD_LEFT, PAD_RIGHT, PAD_UP, PAD_DOWN};
-
     const auto INPUT_TO_KEY_TAP = std::unordered_map<int, WORD>{{B, 'E'}, {X, 'F'}, {Y, 'D'}, {R2, 'R'}, {L2, 'Q'}, {START, 'W'}};
-
     const auto INPUT_TO_MOUSE_CLICK = std::unordered_map<int, int>{{A, SDL_BUTTON_LEFT}, {SELECT, SDL_BUTTON_RIGHT}};
-
     const auto INPUT_TO_MOUSE_MOVE = std::unordered_map<int, std::pair<int, int> *>{
         {PAD_LEFT, &state.mouse_target},
         {PAD_RIGHT, &state.mouse_target},
@@ -115,17 +113,15 @@ void run(std::unordered_map<int, int> &buttonState,
         {R3, &state.mouse_target},
         {L3, &state.mouse_target},
     };
-
     const auto RELEASE_TO_MOUSE_MOVE = std::unordered_map<int, std::pair<int, int> *>{
         {R1, &state.mouse_target},
         {L1, &state.mouse_target},
     };
-
     const auto INPUT_TO_LOGIC_BEFORE = std::unordered_map<int, std::function<bool()>>{
-        {PAD_LEFT, [&]() { return updateAbstractState(PAD_LEFT, buttonState[PAD_LEFT], state, res_scaling_x, res_scaling_y, functions); }},
-        {PAD_RIGHT, [&]() { return updateAbstractState(PAD_RIGHT, buttonState[PAD_RIGHT], state, res_scaling_x, res_scaling_y, functions); }},
-        {PAD_UP, [&]() { return updateAbstractState(PAD_UP, buttonState[PAD_UP], state, res_scaling_x, res_scaling_y, functions); }},
-        {PAD_DOWN, [&]() { return updateAbstractState(PAD_DOWN, buttonState[PAD_DOWN], state, res_scaling_x, res_scaling_y, functions); }}};
+        {PAD_LEFT, [&]() { return updateAbstractState(PAD_LEFT, buttonState[PAD_LEFT], state, buffer_state, res_scaling_x, res_scaling_y, functions); }},
+        {PAD_RIGHT, [&]() { return updateAbstractState(PAD_RIGHT, buttonState[PAD_RIGHT], state, buffer_state, res_scaling_x, res_scaling_y, functions); }},
+        {PAD_UP, [&]() { return updateAbstractState(PAD_UP, buttonState[PAD_UP], state, buffer_state, res_scaling_x, res_scaling_y, functions); }},
+        {PAD_DOWN, [&]() { return updateAbstractState(PAD_DOWN, buttonState[PAD_DOWN], state, buffer_state, res_scaling_x, res_scaling_y, functions); }}};
 
     functions.setMaps(&buttonState, &INPUT_TO_MOUSE_MOVE, &RELEASE_TO_MOUSE_MOVE, &INPUT_TO_MOUSE_CLICK, nullptr, nullptr, nullptr, &INPUT_TO_KEY_TAP, nullptr, nullptr, &INPUT_TO_LOGIC_BEFORE, nullptr, nullptr, nullptr);
 
@@ -311,8 +307,8 @@ void run(std::unordered_map<int, int> &buttonState,
     }
 }
 
-bool updateAbstractState(const int button, const int &buttonState, State &state, const float res_scaling_x, const float res_scaling_y, const Functions &functions) {
-    if (!functions.isBufferFree(200, 50, buttonState, state.pad_to_last_pressed[button], state.pad_to_last_executed[button], state.pad_to_is_unleashed[button])) {
+bool updateAbstractState(const int button, const int &buttonState, State &state, BufferState &bufferState, const float res_scaling_x, const float res_scaling_y, const Functions &functions) {
+    if (!functions.isBufferFree(200, 50, buttonState, bufferState)) {
         return false;
     }
 
