@@ -1,6 +1,7 @@
 #ifndef CHESS_H
 #define CHESS_H
 
+#include "funcs.h"
 #include <SDL2/SDL.h>
 #include <chrono>
 #include <json/json.h>
@@ -29,7 +30,7 @@ struct State {
     std::unordered_map<int, std::chrono::steady_clock::time_point> pad_to_last_executed;
     std::unordered_map<int, bool> pad_to_is_unleashed;
 };
-bool updateAbstractState(const int direction, const int &buttonState, State &state, const float res_scaling_x, const float res_scaling_y);
+bool updateAbstractState(const int button, const int &buttonState, State &state, const float res_scaling_x, const float res_scaling_y, const Functions &functions);
 } // namespace chess
 
 #endif // CHESS_H

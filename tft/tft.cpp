@@ -1,5 +1,4 @@
 #include "tft.h"
-#include "funcs.h"
 #include <chrono>
 #include <cmath>
 #include <fstream>
@@ -32,25 +31,25 @@ const std::vector<std::vector<std::pair<int, int>>> CARD_COORDINATES = {
 const std::vector<std::pair<int, int>> LOCK_COORDINATES = {{1450, 905}, {28, 350}, {33, 436}, {34, 528}, {356, 473}, {344, 538}, {349, 636}};
 
 constexpr int BOARD_ADJACENCY_MATRIX[10][10] = {
-    {NONE, UP, NONE, NONE, NONE, NONE, NONE, NONE, DOWN, NONE},  // 0
-    {DOWN, NONE, UP, NONE, NONE, NONE, NONE, NONE, NONE, NONE},  // 1
-    {NONE, DOWN, NONE, UP, NONE, NONE, NONE, NONE, NONE, NONE},  // 2
-    {NONE, NONE, DOWN, NONE, RIGHT, UP, NONE, NONE, NONE, NONE}, // 3
-    {NONE, NONE, DOWN, LEFT, NONE, NONE, UP, NONE, NONE, NONE},  // 4
-    {NONE, NONE, NONE, DOWN, NONE, NONE, RIGHT, LEFT, UP, NONE}, // 5
-    {NONE, NONE, NONE, NONE, DOWN, LEFT, NONE, RIGHT, NONE, UP}, // 6
-    {NONE, NONE, NONE, NONE, DOWN, RIGHT, LEFT, NONE, NONE, UP}, // 7
-    {UP, NONE, NONE, NONE, NONE, DOWN, NONE, NONE, NONE, RIGHT}, // 8
-    {UP, NONE, NONE, NONE, NONE, NONE, DOWN, NONE, LEFT, NONE}}; // 9
+    {NONE, PAD_UP, NONE, NONE, NONE, NONE, NONE, NONE, PAD_DOWN, NONE},          // 0
+    {PAD_DOWN, NONE, PAD_UP, NONE, NONE, NONE, NONE, NONE, NONE, NONE},          // 1
+    {NONE, PAD_DOWN, NONE, PAD_UP, NONE, NONE, NONE, NONE, NONE, NONE},          // 2
+    {NONE, NONE, PAD_DOWN, NONE, PAD_RIGHT, PAD_UP, NONE, NONE, NONE, NONE},     // 3
+    {NONE, NONE, PAD_DOWN, PAD_LEFT, NONE, NONE, PAD_UP, NONE, NONE, NONE},      // 4
+    {NONE, NONE, NONE, PAD_DOWN, NONE, NONE, PAD_RIGHT, PAD_LEFT, PAD_UP, NONE}, // 5
+    {NONE, NONE, NONE, NONE, PAD_DOWN, PAD_LEFT, NONE, PAD_RIGHT, NONE, PAD_UP}, // 6
+    {NONE, NONE, NONE, NONE, PAD_DOWN, PAD_RIGHT, PAD_LEFT, NONE, NONE, PAD_UP}, // 7
+    {PAD_UP, NONE, NONE, NONE, NONE, PAD_DOWN, NONE, NONE, NONE, PAD_RIGHT},     // 8
+    {PAD_UP, NONE, NONE, NONE, NONE, NONE, PAD_DOWN, NONE, PAD_LEFT, NONE}};     // 9
 
 constexpr int LOCK_ADJACENCY_MATRIX[7][7] = {
-    {NONE, UP, RIGHT, LEFT, NONE, NONE, NONE}, // 0
-    {LEFT, NONE, DOWN, UP, RIGHT, NONE, NONE}, // 1
-    {LEFT, UP, NONE, DOWN, NONE, RIGHT, NONE}, // 2
-    {LEFT, DOWN, UP, NONE, NONE, NONE, RIGHT}, // 3
-    {RIGHT, LEFT, NONE, NONE, NONE, DOWN, UP}, // 4
-    {RIGHT, NONE, LEFT, NONE, UP, NONE, DOWN}, // 5
-    {RIGHT, NONE, NONE, LEFT, DOWN, UP, NONE}, // 6
+    {NONE, PAD_UP, PAD_RIGHT, PAD_LEFT, NONE, NONE, NONE},     // 0
+    {PAD_LEFT, NONE, PAD_DOWN, PAD_UP, PAD_RIGHT, NONE, NONE}, // 1
+    {PAD_LEFT, PAD_UP, NONE, PAD_DOWN, NONE, PAD_RIGHT, NONE}, // 2
+    {PAD_LEFT, PAD_DOWN, PAD_UP, NONE, NONE, NONE, PAD_RIGHT}, // 3
+    {PAD_RIGHT, PAD_LEFT, NONE, NONE, NONE, PAD_DOWN, PAD_UP}, // 4
+    {PAD_RIGHT, NONE, PAD_LEFT, NONE, PAD_UP, NONE, PAD_DOWN}, // 5
+    {PAD_RIGHT, NONE, NONE, PAD_LEFT, PAD_DOWN, PAD_UP, NONE}, // 6
 };
 
 void run(std::unordered_map<int, int> &buttonState,
@@ -96,9 +95,9 @@ void run(std::unordered_map<int, int> &buttonState,
         .mode = BOARD,
         .previous_mode = BOARD,
         .mouse_target = {},
-        .pad_to_last_pressed = {{LEFT, now}, {RIGHT, now}, {UP, now}, {DOWN, now}},
-        .pad_to_last_executed = {{LEFT, now}, {RIGHT, now}, {UP, now}, {DOWN, now}},
-        .pad_to_is_unleashed = {{LEFT, false}, {RIGHT, false}, {UP, false}, {DOWN, false}}};
+        .pad_to_last_pressed = {{PAD_LEFT, now}, {PAD_RIGHT, now}, {PAD_UP, now}, {PAD_DOWN, now}},
+        .pad_to_last_executed = {{PAD_LEFT, now}, {PAD_RIGHT, now}, {PAD_UP, now}, {PAD_DOWN, now}},
+        .pad_to_is_unleashed = {{PAD_LEFT, false}, {PAD_RIGHT, false}, {PAD_UP, false}, {PAD_DOWN, false}}};
 
     const auto TURBO_INPUTS = std::unordered_set<int>{PAD_LEFT, PAD_RIGHT, PAD_UP, PAD_DOWN};
 
@@ -123,10 +122,10 @@ void run(std::unordered_map<int, int> &buttonState,
     };
 
     const auto INPUT_TO_LOGIC_BEFORE = std::unordered_map<int, std::function<bool()>>{
-        {PAD_LEFT, [&]() { return updateAbstractState(LEFT, buttonState[PAD_LEFT], state, res_scaling_x, res_scaling_y); }},
-        {PAD_RIGHT, [&]() { return updateAbstractState(RIGHT, buttonState[PAD_RIGHT], state, res_scaling_x, res_scaling_y); }},
-        {PAD_UP, [&]() { return updateAbstractState(UP, buttonState[PAD_UP], state, res_scaling_x, res_scaling_y); }},
-        {PAD_DOWN, [&]() { return updateAbstractState(DOWN, buttonState[PAD_DOWN], state, res_scaling_x, res_scaling_y); }}};
+        {PAD_LEFT, [&]() { return updateAbstractState(PAD_LEFT, buttonState[PAD_LEFT], state, res_scaling_x, res_scaling_y, functions); }},
+        {PAD_RIGHT, [&]() { return updateAbstractState(PAD_RIGHT, buttonState[PAD_RIGHT], state, res_scaling_x, res_scaling_y, functions); }},
+        {PAD_UP, [&]() { return updateAbstractState(PAD_UP, buttonState[PAD_UP], state, res_scaling_x, res_scaling_y, functions); }},
+        {PAD_DOWN, [&]() { return updateAbstractState(PAD_DOWN, buttonState[PAD_DOWN], state, res_scaling_x, res_scaling_y, functions); }}};
 
     functions.setMaps(&buttonState, &INPUT_TO_MOUSE_MOVE, &RELEASE_TO_MOUSE_MOVE, &INPUT_TO_MOUSE_CLICK, nullptr, nullptr, nullptr, &INPUT_TO_KEY_TAP, nullptr, nullptr, &INPUT_TO_LOGIC_BEFORE, nullptr, nullptr, nullptr);
 
@@ -304,101 +303,88 @@ void run(std::unordered_map<int, int> &buttonState,
             }
 
             std::this_thread::sleep_for(
-                std::chrono::microseconds(std::max(10000 - std::chrono::duration_cast<std::chrono::microseconds>(
-                                                               std::chrono::steady_clock::now() - loopStartTime)
-                                                               .count(),
-                                                   0LL)));
+                std::chrono::microseconds(std::max(
+                    10000 - std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - loopStartTime).count(), 0LL)));
         }
     } catch (const std::exception &e) {
         std::cerr << "Exception: " << e.what() << std::endl;
     }
 }
 
-bool updateAbstractState(const int direction, const int &buttonState, State &state, const float res_scaling_x, const float res_scaling_y) {
-    auto now = std::chrono::steady_clock::now();
-    auto last_executed = state.pad_to_last_executed[direction];
-    if (now - last_executed > std::chrono::milliseconds(50)) {
-        auto is_unleashed = state.pad_to_is_unleashed[direction];
-        auto last_pressed = state.pad_to_last_pressed[direction];
-        if (is_unleashed || now - last_pressed > std::chrono::milliseconds(200)) {
-            state.pad_to_last_executed[direction] = now;
-            state.pad_to_is_unleashed[direction] = buttonState == PRESSED;
-            if (buttonState == JUST_PRESSED) {
-                state.pad_to_last_pressed[direction] = now;
-            }
-            if (state.mode == FREE) {
-                state.mode = BOARD;
-                state.boardRow = 0;
-                state.boardColumn = 0;
-                auto coordinates = BOARD_COORDINATES[0][0];
-                state.mouse_target = {coordinates.first * res_scaling_x, coordinates.second * res_scaling_y};
-                return true;
-            }
-            std::pair<int, int> coordinates;
-            if (state.mode == BOARD) {
-                if (direction == UP) {
-                    state.boardRow = (state.boardRow + 1) % 5;
-                    if (state.boardRow != 0) {
-                        state.boardColumn = state.boardColumn > 6 ? 6 : state.boardColumn;
-                    }
-                } else if (direction == DOWN) {
-                    state.boardRow = (state.boardRow + 4) % 5;
-                    if (state.boardRow != 0) {
-                        state.boardColumn = state.boardColumn > 6 ? 6 : state.boardColumn;
-                    }
-                } else if (direction == LEFT) {
-                    if (state.boardRow != 0) {
-                        state.boardColumn = (state.boardColumn + 6) % 7;
-                    } else {
-                        state.boardColumn = (state.boardColumn + 8) % 9;
-                    }
-                } else if (direction == RIGHT) {
-                    if (state.boardRow != 0) {
-                        state.boardColumn = (state.boardColumn + 1) % 7;
-                    } else {
-                        state.boardColumn = (state.boardColumn + 1) % 9;
-                    }
-                }
-                coordinates = BOARD_COORDINATES[state.boardRow][state.boardColumn];
-            } else if (state.mode == ITEMS) {
-                for (int i = 0; i < 10; i++) {
-                    if (BOARD_ADJACENCY_MATRIX[state.itemIndex][i] == direction) {
-                        state.itemIndex = i;
-                        break;
-                    }
-                }
-                coordinates = ITEM_COORDINATES[state.itemIndex];
-            } else if (state.mode == SHOP) {
-                if (direction == LEFT) {
-                    state.shopIndex = (state.shopIndex + 4) % 5;
-                } else if (direction == RIGHT) {
-                    state.shopIndex = (state.shopIndex + 1) % 5;
-                }
-                coordinates = SHOP_COORDINATES[state.shopIndex];
-            } else if (state.mode == CARDS) {
-                if (direction == UP || direction == DOWN) {
-                    state.cardRow = (state.cardRow + 1) % 2;
-                } else if (direction == RIGHT) {
-                    state.cardColumn = (state.cardColumn + 1) % 3;
-                } else if (direction == LEFT) {
-                    state.cardColumn = (state.cardColumn + 2) % 3;
-                }
-                coordinates = CARD_COORDINATES[state.cardRow][state.cardColumn];
-            } else if (state.mode == LOCK) {
-                for (int i = 0; i < 7; i++) {
-                    if (LOCK_ADJACENCY_MATRIX[state.lockIndex][i] == direction) {
-                        state.lockIndex = i;
-                        break;
-                    }
-                }
-                coordinates = LOCK_COORDINATES[state.lockIndex];
-            }
-            state.mouse_target = {coordinates.first * res_scaling_x, coordinates.second * res_scaling_y};
-            return true;
-        }
+bool updateAbstractState(const int button, const int &buttonState, State &state, const float res_scaling_x, const float res_scaling_y, const Functions &functions) {
+    if (!functions.isBufferFree(200, 50, buttonState, state.pad_to_last_pressed[button], state.pad_to_last_executed[button], state.pad_to_is_unleashed[button])) {
         return false;
     }
-    return false;
+
+    if (state.mode == FREE) {
+        state.mode = BOARD;
+        state.boardRow = 0;
+        state.boardColumn = 0;
+        auto coordinates = BOARD_COORDINATES[0][0];
+        state.mouse_target = {coordinates.first * res_scaling_x, coordinates.second * res_scaling_y};
+        return true;
+    }
+    std::pair<int, int> coordinates;
+    if (state.mode == BOARD) {
+        if (button == PAD_UP) {
+            state.boardRow = (state.boardRow + 1) % 5;
+            if (state.boardRow != 0) {
+                state.boardColumn = state.boardColumn > 6 ? 6 : state.boardColumn;
+            }
+        } else if (button == PAD_DOWN) {
+            state.boardRow = (state.boardRow + 4) % 5;
+            if (state.boardRow != 0) {
+                state.boardColumn = state.boardColumn > 6 ? 6 : state.boardColumn;
+            }
+        } else if (button == PAD_LEFT) {
+            if (state.boardRow != 0) {
+                state.boardColumn = (state.boardColumn + 6) % 7;
+            } else {
+                state.boardColumn = (state.boardColumn + 8) % 9;
+            }
+        } else if (button == PAD_RIGHT) {
+            if (state.boardRow != 0) {
+                state.boardColumn = (state.boardColumn + 1) % 7;
+            } else {
+                state.boardColumn = (state.boardColumn + 1) % 9;
+            }
+        }
+        coordinates = BOARD_COORDINATES[state.boardRow][state.boardColumn];
+    } else if (state.mode == ITEMS) {
+        for (int i = 0; i < 10; i++) {
+            if (BOARD_ADJACENCY_MATRIX[state.itemIndex][i] == button) {
+                state.itemIndex = i;
+                break;
+            }
+        }
+        coordinates = ITEM_COORDINATES[state.itemIndex];
+    } else if (state.mode == SHOP) {
+        if (button == PAD_LEFT) {
+            state.shopIndex = (state.shopIndex + 4) % 5;
+        } else if (button == PAD_RIGHT) {
+            state.shopIndex = (state.shopIndex + 1) % 5;
+        }
+        coordinates = SHOP_COORDINATES[state.shopIndex];
+    } else if (state.mode == CARDS) {
+        if (button == PAD_UP || button == PAD_DOWN) {
+            state.cardRow = (state.cardRow + 1) % 2;
+        } else if (button == PAD_RIGHT) {
+            state.cardColumn = (state.cardColumn + 1) % 3;
+        } else if (button == PAD_LEFT) {
+            state.cardColumn = (state.cardColumn + 2) % 3;
+        }
+        coordinates = CARD_COORDINATES[state.cardRow][state.cardColumn];
+    } else if (state.mode == LOCK) {
+        for (int i = 0; i < 7; i++) {
+            if (LOCK_ADJACENCY_MATRIX[state.lockIndex][i] == button) {
+                state.lockIndex = i;
+                break;
+            }
+        }
+        coordinates = LOCK_COORDINATES[state.lockIndex];
+    }
+    state.mouse_target = {coordinates.first * res_scaling_x, coordinates.second * res_scaling_y};
+    return true;
 }
 
 void updateAbstractState(const std::unordered_map<int, int> &buttonState, State &state, const float res_scaling_x, const float res_scaling_y) {

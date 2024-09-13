@@ -68,12 +68,5 @@ enum ButtonState {
     RELEASED,
 };
 
-enum Direction {
-    UP,
-    DOWN,
-    LEFT,
-    RIGHT,
-};
-
 const std::unordered_set<int> PRESSED_STATES = {PRESSED, JUST_PRESSED};
 const std::unordered_set<int> RELEASED_STATES = {RELEASED, JUST_RELEASED};
